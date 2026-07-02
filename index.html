@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSW Travel Planner</title>
+<style>
+  :root{
+    --cream:#FBF6EF; --cream-deep:#F2E9DE;
+    --blush:#F6D6DC; --blush-soft:#FCEDF0; --blush-deep:#DD7F97; --blush-ink:#B85874;
+    --sky:#D6EAF0; --sky-soft:#EBF6F9; --sky-deep:#6FA9C2;
+    --ink:#3B2E35; --muted:#8E7B84; --muted-soft:#B7A6AC; --white:#FFFDFB; --line:#E9DED6;
+    --shadow: 0 12px 30px -12px rgba(90,50,60,0.18);
+    --shadow-lg: 0 24px 55px -20px rgba(90,50,60,0.28);
+    --radius: 22px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(circle at 8% 0%, rgba(246,214,220,0.55), transparent 40%),
+      radial-gradient(circle at 100% 10%, rgba(214,234,240,0.55), transparent 45%), var(--cream);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh;
+  }
+  .display{font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,"Times New Roman",serif;}
+  .eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--blush-ink);font-weight:700;}
+  a{color:inherit;} button{font-family:inherit;cursor:pointer;} ::selection{background:var(--blush);}
+  ::-webkit-scrollbar{width:9px;height:9px;} ::-webkit-scrollbar-thumb{background:var(--blush);border-radius:10px;}
+  :focus-visible{outline:2px solid var(--blush-ink); outline-offset:2px; border-radius:6px;}
+
+  .shell{max-width:1180px;margin:0 auto;padding:0 22px 90px;}
+  header.top{padding:26px 22px 14px;max-width:1180px;margin:0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .mark{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--blush) 0%, var(--sky) 100%);
+    display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:var(--shadow);flex-shrink:0;}
+  .brand h1{margin:0;font-size:22px;font-weight:600;line-height:1.1;}
+  .brand .sub{margin:2px 0 0;font-size:12.5px;color:var(--muted);}
+  .trip-chip{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end;}
+  .pill{background:var(--white);border:1px solid var(--line);border-radius:100px;padding:7px 13px;font-size:12px;font-weight:600;
+    color:var(--ink);display:flex;align-items:center;gap:6px;box-shadow:var(--shadow);}
+  .pill.blush{background:var(--blush-soft);border-color:transparent;color:var(--blush-ink);}
+  .pill.sky{background:var(--sky-soft);border-color:transparent;color:#3E7387;}
+  .pill.refresh{background:var(--ink);color:#fff;border:none;font-weight:700;}
+  .pill.refresh:hover{background:var(--blush-ink);}
+  .pill.updated{font-size:10.5px;color:var(--muted-soft);background:transparent;border:none;box-shadow:none;padding:2px 4px;}
+
+  nav.tabs{max-width:1180px;margin:18px auto 26px;padding:0 22px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;}
+  nav.tabs::-webkit-scrollbar{display:none;}
+  .tab-btn{border:none;background:transparent;padding:11px 17px;border-radius:100px;font-size:13.5px;font-weight:600;color:var(--muted);
+    white-space:nowrap;transition:all .25s ease;display:flex;align-items:center;gap:7px;}
+  .tab-btn:hover{color:var(--ink);background:rgba(255,255,255,0.6);}
+  .tab-btn.active{background:var(--ink);color:var(--white);box-shadow:var(--shadow);}
+
+  .view{display:none;animation:fadeUp .45s ease;}
+  .view.active{display:block;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  section.panel{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow);margin-bottom:22px;}
+  h2.view-title{font-size:24px;margin:0 0 4px;font-weight:600;}
+  p.view-desc{margin:0 0 20px;color:var(--muted);font-size:14px;line-height:1.5;max-width:640px;}
+
+  /* trip setup */
+  .setup-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;}
+  @media (max-width:1050px){.setup-grid{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:700px){.setup-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:480px){.setup-grid{grid-template-columns:1fr;}}
+  .mode-note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;}
+  .setup-field label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;display:block;margin-bottom:8px;}
+  .date-row{display:flex;gap:8px;align-items:center;}
+  input[type=date]{border:1px solid var(--line);border-radius:12px;padding:8px 9px;font-size:12.5px;font-family:inherit;background:#fff;color:var(--ink);width:100%;}
+  .group-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+  .group-btn{border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 11px;font-size:11.5px;font-weight:700;color:var(--muted);}
+  .group-btn.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .group-custom{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+  .group-custom input{width:56px;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:13px;text-align:center;}
+  .pp-row{display:flex;align-items:center;gap:8px;}
+  .pp-row input{width:70px;border:1px solid var(--line);border-radius:10px;padding:7px 9px;font-size:13px;}
+  .pp-row span.dash{color:var(--muted);font-weight:700;}
+  .setup-total{background:linear-gradient(120deg,var(--blush-soft),var(--sky-soft));border-radius:14px;padding:12px 14px;font-size:12.5px;color:#3f2c34;line-height:1.6;}
+  .setup-total strong{font-family:"Iowan Old Style",Georgia,serif;font-size:16px;}
+
+  /* search / suggestions */
+  .search-row{display:flex;gap:10px;}
+  .search-row input[type=text]{flex:1;border:1px solid var(--line);border-radius:100px;padding:13px 18px;font-size:13.5px;background:var(--cream-deep);}
+  .search-row button{border:none;background:var(--blush-deep);color:#fff;border-radius:100px;padding:0 22px;font-size:13px;font-weight:700;}
+  .search-row button:hover{background:var(--blush-ink);}
+  .search-hint{font-size:11.5px;color:var(--muted-soft);margin-top:8px;}
+  .suggestion-results{margin-top:16px;}
+  .sugg-sub{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--blush-ink);font-weight:700;margin:14px 0 8px;}
+  .sugg-card{background:var(--sky-soft);border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;transition:transform .15s;}
+  .sugg-card:hover{transform:translateX(3px);}
+  .sugg-card .sname{font-weight:700;font-size:13.5px;}
+  .sugg-card .swhy{font-size:11.5px;color:#3f6672;margin-top:2px;}
+  .sugg-card button{border:none;background:var(--ink);color:#fff;border-radius:100px;padding:7px 13px;font-size:11.5px;font-weight:700;flex-shrink:0;}
+  .sugg-act{background:var(--blush-soft);}
+  .sugg-act .swhy{color:var(--blush-ink);}
+
+  /* filter bar */
+  .filterbar{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;background:linear-gradient(120deg, var(--blush-soft), var(--sky-soft));
+    border-radius:18px;padding:16px 18px;margin-bottom:22px;border:1px solid var(--line);}
+  .fgroup{display:flex;flex-direction:column;gap:6px;min-width:140px;}
+  .fgroup label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+  select{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--white);font-size:13px;color:var(--ink);font-weight:600;}
+  .chipset{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip-toggle{border:1px solid var(--line);background:var(--white);border-radius:100px;padding:7px 12px;font-size:12.5px;font-weight:600;color:var(--muted);transition:all .2s;}
+  .chip-toggle.on{background:var(--blush-deep);border-color:var(--blush-deep);color:#fff;}
+  .range-wrap{min-width:170px;} .range-wrap .val{font-size:12px;color:var(--blush-ink);font-weight:700;}
+  input[type=range]{-webkit-appearance:none;height:6px;border-radius:6px;background:var(--line);width:100%;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--blush-deep);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.25);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--blush-deep);border:3px solid #fff;cursor:pointer;}
+  .reset-btn{border:1px solid var(--line);background:var(--white);border-radius:100px;padding:8px 14px;font-size:12.5px;font-weight:700;color:var(--muted);margin-left:auto;}
+  .reset-btn:hover{color:var(--blush-ink);border-color:var(--blush-deep);}
+  .season-pill{background:var(--white);border:1px dashed var(--blush-deep);border-radius:100px;padding:7px 13px;font-size:12px;font-weight:700;color:var(--blush-ink);}
+
+  /* trending ribbon */
+  .trending-row{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 20px;}
+  .trending-chip{background:var(--white);border:1px solid var(--line);border-radius:100px;padding:6px 12px 6px 6px;font-size:12px;font-weight:600;
+    display:flex;align-items:center;gap:6px;box-shadow:var(--shadow);}
+  .trending-chip .flame{background:var(--blush-deep);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;}
+
+  /* postcards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px;}
+  .postcard{position:relative;background:var(--white);border-radius:16px;border:1px solid var(--line);box-shadow:var(--shadow);
+    padding:16px 16px 18px;transition:transform .28s ease, box-shadow .28s ease;cursor:pointer;}
+  .postcard:hover{transform:translateY(-5px) rotate(-.4deg);box-shadow:var(--shadow-lg);}
+  .postcard .stamp{position:absolute;top:12px;right:12px;width:38px;height:38px;border-radius:10px;background:var(--sky-soft);
+    border:2px dashed var(--sky-deep);display:flex;align-items:center;justify-content:center;font-size:17px;transform:rotate(6deg);}
+  .postcard .top-strip{height:6px;border-radius:6px;background:linear-gradient(90deg,var(--blush),var(--sky));margin-bottom:14px;}
+  .postcard h3{margin:0 0 4px;font-size:18px;font-weight:600;padding-right:40px;}
+  .vibe-tag{font-size:11.5px;font-weight:700;color:var(--blush-ink);text-transform:uppercase;letter-spacing:.05em;}
+  .postcard p.desc{font-size:13px;color:var(--muted);line-height:1.5;margin:8px 0 12px;min-height:56px;}
+  .meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .meta-chip{font-size:11.5px;font-weight:700;color:var(--ink);background:var(--cream-deep);border-radius:100px;padding:5px 10px;display:flex;align-items:center;gap:4px;}
+  .weather-chip{font-size:11px;font-weight:700;background:var(--sky-soft);color:#2f5866;border-radius:100px;padding:5px 10px;display:inline-flex;gap:4px;align-items:center;}
+  .group-badge{font-size:11px;color:var(--muted);margin-bottom:4px;}
+  .romance-note{font-size:10.5px;color:var(--muted-soft);margin-bottom:10px;}
+  .score-mini{display:flex;gap:3px;margin-bottom:14px;}
+  .score-mini .bar{flex:1;height:5px;border-radius:4px;background:var(--line);overflow:hidden;}
+  .score-mini .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blush-deep),var(--sky-deep));}
+  .card-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .btn{border:none;border-radius:100px;padding:9px 14px;font-size:12.5px;font-weight:700;transition:all .2s;}
+  .btn.primary{background:var(--ink);color:#fff;} .btn.primary:hover{background:var(--blush-ink);}
+  .btn.ghost{background:var(--cream-deep);color:var(--ink);} .btn.ghost:hover{background:var(--blush-soft);}
+  .btn.small{padding:7px 11px;font-size:11.5px;}
+  .compare-check{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--muted);margin-left:auto;user-select:none;}
+  .compare-check input{width:16px;height:16px;accent-color:var(--blush-deep);}
+  .more-btn-wrap{grid-column:1/-1;text-align:center;padding:14px 0;}
+  .more-btn{border:2px dashed var(--blush-deep);background:transparent;color:var(--blush-ink);border-radius:100px;padding:12px 22px;font-size:13px;font-weight:700;}
+  .more-btn:hover{background:var(--blush-soft);}
+
+  #compareBar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(120%);background:var(--ink);color:#fff;border-radius:100px;
+    padding:10px 10px 10px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 20px 40px -12px rgba(0,0,0,0.4);z-index:60;transition:transform .35s cubic-bezier(.2,.9,.3,1.2);}
+  #compareBar.show{transform:translateX(-50%) translateY(0);}
+  #compareBar span{font-size:13px;font-weight:600;}
+  #compareBar button.go{background:var(--blush-deep);color:#fff;border-radius:100px;padding:9px 16px;font-size:12.5px;font-weight:700;border:none;}
+  #compareBar button.clear{background:transparent;color:#d8cfd2;border:none;font-size:12px;text-decoration:underline;}
+
+  /* map */
+  .map-wrap{display:grid;grid-template-columns:1.3fr 1fr;gap:22px;}
+  @media (max-width:820px){.map-wrap{grid-template-columns:1fr;}}
+  .map-canvas{background:linear-gradient(160deg, var(--sky-soft) 0%, var(--blush-soft) 100%);border-radius:20px;position:relative;min-height:460px;overflow:hidden;border:1px solid var(--line);}
+  .map-canvas svg{position:absolute;inset:0;width:100%;height:100%;}
+  .pin{position:absolute;transform:translate(-50%,-100%);cursor:pointer;transition:transform .2s ease,opacity .2s ease;text-align:center;}
+  .pin .dot{width:15px;height:15px;border-radius:50%;background:var(--blush-deep);border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,0.25);margin:0 auto;}
+  .pin .lbl{font-size:10.5px;font-weight:700;background:rgba(255,255,255,0.92);padding:2px 7px;border-radius:100px;margin-top:4px;white-space:nowrap;box-shadow:var(--shadow);}
+  .pin:hover{transform:translate(-50%,-115%);} .pin.faded{opacity:.28;}
+  .pin.active .dot{background:var(--sky-deep);width:19px;height:19px;} .pin.active .lbl{background:var(--ink);color:#fff;}
+  .sydney-pin{position:absolute;transform:translate(-50%,-50%);text-align:center;}
+  .sydney-pin .dot2{width:11px;height:11px;border-radius:50%;background:var(--ink);border:2px solid #fff;margin:0 auto;}
+  .sydney-pin .lbl2{font-size:10px;font-weight:700;color:var(--ink);margin-top:2px;}
+  .map-more{position:absolute;bottom:14px;right:14px;}
+
+  .detail-panel{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:var(--shadow);min-height:460px;display:flex;flex-direction:column;}
+  .detail-empty{margin:auto;text-align:center;color:var(--muted);font-size:13.5px;padding:20px;}
+  .detail-empty .big{font-size:34px;margin-bottom:10px;}
+  .dp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .dp-head h3{margin:0;font-size:21px;font-weight:600;}
+  .dp-close{background:none;border:none;font-size:18px;color:var(--muted);}
+  .dp-scores{margin:16px 0;}
+  .score-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+  .score-row .label{width:80px;font-size:11.5px;color:var(--muted);font-weight:700;}
+  .score-row .bar{flex:1;height:7px;border-radius:6px;background:var(--line);overflow:hidden;}
+  .score-row .bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--blush-deep),var(--sky-deep));}
+  .score-row .num{font-size:11.5px;font-weight:700;color:var(--ink);width:22px;text-align:right;}
+  .dp-section h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--blush-ink);margin:14px 0 6px;}
+  .dp-section ul{margin:0 0 4px;padding-left:18px;font-size:13.5px;color:var(--ink);line-height:1.6;}
+  .dp-bestfor{background:var(--sky-soft);border-radius:14px;padding:12px 14px;font-size:13px;color:#2f5866;margin-top:12px;line-height:1.5;}
+  .dp-linkrow{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .accom-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .accom-chip{font-size:11px;font-weight:700;background:var(--cream-deep);border-radius:100px;padding:5px 10px;}
+  .book-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .book-link{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;background:var(--white);border:1px solid var(--line);
+    border-radius:100px;padding:7px 12px;text-decoration:none;color:var(--ink);}
+  .book-link:hover{border-color:var(--blush-deep);color:var(--blush-ink);}
+
+  /* compare */
+  .compare-empty{text-align:center;padding:60px 20px;color:var(--muted);} .compare-empty .big{font-size:40px;margin-bottom:12px;}
+  .compare-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));}
+  .cboard{background:linear-gradient(160deg,var(--white),var(--cream-deep));border:1px solid var(--line);border-radius:18px;padding:18px;position:relative;}
+  .cboard .remove{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--muted);font-size:16px;}
+  .cboard h3{margin:2px 0 2px;font-size:17px;} .cboard .vibe-tag{display:block;margin-bottom:10px;}
+  .cboard .metarow{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  .cboard .scorewrap .score-row .label{width:66px;font-size:10.7px;}
+  .cboard .best{font-size:12px;background:var(--blush-soft);color:var(--blush-ink);border-radius:12px;padding:10px 12px;margin-top:10px;line-height:1.5;}
+  .cboard ul.high{font-size:12.5px;padding-left:16px;margin:6px 0 0;color:var(--ink);line-height:1.55;}
+
+  /* activities */
+  .act-filter-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+  .act-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+  .act-card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);cursor:pointer;transition:transform .2s;}
+  .act-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);}
+  .act-card .cat{font-size:11px;font-weight:700;color:var(--sky-deep);text-transform:uppercase;letter-spacing:.05em;}
+  .act-card h4{margin:5px 0 6px;font-size:15.5px;}
+  .act-card p{margin:0 0 10px;font-size:12.8px;color:var(--muted);line-height:1.5;}
+  .act-card .tags{display:flex;flex-wrap:wrap;gap:5px;}
+  .act-card .tags span{font-size:10.5px;background:var(--cream-deep);border-radius:100px;padding:3px 8px;font-weight:600;color:var(--ink);}
+  .cost-badge{font-size:11px;font-weight:700;border-radius:100px;padding:3px 9px;}
+  .cost-low{background:#E4F3E7;color:#357048;} .cost-mid{background:#FCF0D8;color:#8A6516;} .cost-high{background:#FADADD;color:#A23B54;}
+  .seasonal-badge{background:var(--blush-deep);color:#fff;font-size:10px;font-weight:700;border-radius:100px;padding:3px 8px;display:inline-block;margin-bottom:6px;}
+
+  /* itinerary */
+  .dest-picker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;}
+  .dest-pick-btn{border:1px solid var(--line);background:var(--white);border-radius:100px;padding:8px 14px;font-size:12.5px;font-weight:700;color:var(--muted);}
+  .dest-pick-btn.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .itin-note{background:var(--sky-soft);border-radius:14px;padding:12px 14px;font-size:13px;color:#2f5866;margin-bottom:18px;}
+  .day-block{display:grid;grid-template-columns:110px 1fr;gap:16px;padding:18px 0;border-bottom:1px dashed var(--line);}
+  .day-block:last-child{border-bottom:none;}
+  .day-block .day-label{font-weight:700;font-size:15px;color:var(--blush-ink);} .day-block .day-sub{font-size:11.5px;color:var(--muted);margin-top:3px;}
+  .timeslot{display:flex;gap:12px;margin-bottom:12px;}
+  .timeslot .tlabel{font-size:11px;font-weight:700;color:#fff;background:var(--sky-deep);border-radius:100px;padding:4px 10px;height:fit-content;white-space:nowrap;}
+  .timeslot p{margin:0;font-size:13.5px;line-height:1.55;}
+
+  /* budget */
+  .budget-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;} @media (max-width:760px){.budget-grid{grid-template-columns:1fr;}}
+  .slider-row{margin-bottom:22px;} .slider-row .toplbl{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:8px;}
+  .slider-row .toplbl span.amt{color:var(--blush-ink);}
+  .budget-total{background:linear-gradient(135deg,var(--blush-soft),var(--sky-soft));border-radius:18px;padding:22px;text-align:center;}
+  .budget-total .big-num{font-size:38px;font-weight:600;font-family:"Iowan Old Style",Georgia,serif;color:var(--ink);}
+  .budget-total .range{font-size:13px;color:var(--muted);margin-top:6px;}
+  .budget-target{font-size:12.5px;margin-top:10px;padding:8px 10px;border-radius:10px;}
+  .budget-target.over{background:#FADADD;color:#A23B54;} .budget-target.under{background:#E4F3E7;color:#357048;}
+  .budget-bars{margin-top:18px;} .bb-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .bb-row .lbl{font-size:11.5px;width:86px;color:var(--muted);font-weight:700;text-align:left;}
+  .bb-row .track{flex:1;height:10px;border-radius:6px;background:var(--white);overflow:hidden;} .bb-row .track i{display:block;height:100%;}
+  .bb-row .amt{font-size:11.5px;font-weight:700;width:56px;text-align:right;}
+
+  #surpriseBtn{position:fixed;bottom:24px;right:24px;z-index:55;background:linear-gradient(135deg,var(--blush-deep),var(--sky-deep));color:#fff;border:none;
+    border-radius:100px;padding:14px 20px;font-size:13.5px;font-weight:700;box-shadow:0 16px 34px -10px rgba(90,50,60,0.5);display:flex;align-items:center;gap:8px;transition:transform .2s;}
+  #surpriseBtn:hover{transform:translateY(-3px) scale(1.03);}
+  #modalOverlay{position:fixed;inset:0;background:rgba(59,46,53,0.45);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;overflow-y:auto;}
+  #modalOverlay.show{display:flex;}
+  .modal-card{background:var(--white);border-radius:24px;max-width:520px;width:100%;padding:30px;box-shadow:var(--shadow-lg);position:relative;
+    animation:pop .4s cubic-bezier(.2,.9,.3,1.3);max-height:85vh;overflow-y:auto;}
+  @keyframes pop{from{transform:scale(.9);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .modal-card .close-x{position:absolute;top:16px;right:18px;background:none;border:none;font-size:18px;color:var(--muted);}
+  .tag2{font-size:11px;font-weight:700;color:var(--blush-ink);text-transform:uppercase;letter-spacing:.08em;}
+  .modal-card h2{margin:6px 0 8px;font-size:24px;}
+  .why{background:var(--sky-soft);border-radius:14px;padding:14px;font-size:13px;color:#2f5866;line-height:1.55;margin:14px 0;}
+  .surprise-actions{display:flex;gap:10px;margin-top:16px;}
+  .modal-dest-card{background:var(--cream-deep);border-radius:14px;padding:12px 14px;margin-bottom:10px;}
+  .modal-dest-card h4{margin:0 0 4px;font-size:14.5px;}
+  .modal-dest-card .other{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
+
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-30px);background:var(--ink);color:#fff;padding:10px 18px;
+    border-radius:100px;font-size:12.5px;font-weight:600;z-index:120;opacity:0;transition:all .35s ease;pointer-events:none;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  footer.foot{text-align:center;padding:30px 20px 10px;font-size:12px;color:var(--muted-soft);}
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}
+  @media (max-width:600px){.map-wrap{grid-template-columns:1fr;} .day-block{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="mark">🎀</div>
+    <div><h1 class="display">NSW Travel Planner</h1><p class="sub" id="brandSub">Any crew, any season, one good decision.</p></div>
+  </div>
+  <div class="trip-chip" id="headerPills"></div>
+</header>
+
+<nav class="tabs" id="tabNav">
+  <button class="tab-btn active" data-tab="explore">🗺️ Explore</button>
+  <button class="tab-btn" data-tab="destinations">🏡 Destinations</button>
+  <button class="tab-btn" data-tab="compare">⚖️ Compare</button>
+  <button class="tab-btn" data-tab="activities">🌿 Activities</button>
+  <button class="tab-btn" data-tab="itinerary">📅 Itinerary</button>
+  <button class="tab-btn" data-tab="budget">💰 Budget</button>
+</nav>
+
+<div class="shell">
+
+  <!-- TRIP SETUP (explore tab only) -->
+  <section class="panel" id="tripSetupPanel">
+    <h2 class="view-title display">Set up your trip 🎀</h2>
+    <p class="view-desc">This drives everything else — the season, the weather, who's coming, and what it'll cost.</p>
+    <div class="setup-grid">
+      <div class="setup-field">
+        <label>Mode</label>
+        <div class="group-btns" id="modeBtns"></div>
+        <div class="mode-note" id="modeNote"></div>
+      </div>
+      <div class="setup-field">
+        <label>Dates</label>
+        <div class="date-row">
+          <input type="date" id="tripStartInput">
+          <span style="color:var(--muted);">→</span>
+          <input type="date" id="tripEndInput">
+        </div>
+      </div>
+      <div class="setup-field">
+        <label>Group size</label>
+        <div class="group-btns" id="groupBtns"></div>
+        <div class="group-custom">or exact count: <input type="number" id="groupCustom" min="1" max="30"></div>
+      </div>
+      <div class="setup-field">
+        <label>Budget per person</label>
+        <div class="pp-row">
+          <span>$</span><input type="number" id="ppMin" min="50" max="2000" step="10">
+          <span class="dash">–</span>
+          <span>$</span><input type="number" id="ppMax" min="50" max="2000" step="10">
+        </div>
+      </div>
+      <div class="setup-field">
+        <label>&nbsp;</label>
+        <div class="setup-total" id="setupTotal"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEARCH / SUGGESTIONS -->
+  <section class="panel" id="searchPanel">
+    <h2 class="view-title display">✨ Not sure where to start?</h2>
+    <p class="view-desc">Tell us what you're after — a vibe, a budget, a drive time, anything — and we'll match it against everything above.</p>
+    <div class="search-row">
+      <input type="text" id="suggestInput" placeholder="e.g. I'm a musician after a nature getaway, or somewhere quiet with good wifi...">
+      <button id="suggestBtn">Get suggestions</button>
+    </div>
+    <div class="search-hint">Try a vibe (wine, coastal, cozy), a hobby (hiking, music, yoga, wildlife), a need (wifi, quiet, dog-friendly), or a budget word (cheap, luxury).</div>
+    <div class="suggestion-results" id="suggestResults"></div>
+  </section>
+
+  <!-- FILTER BAR -->
+  <div class="filterbar" id="filterBarWrap">
+    <div class="fgroup">
+      <label>Price tier</label>
+      <select id="f-budget">
+        <option value="any">Any price tier</option>
+        <option value="low">Low ($450–550pc)</option>
+        <option value="mid">Mid ($500–650pc)</option>
+        <option value="high">High ($600–750pc)</option>
+      </select>
+    </div>
+    <div class="fgroup range-wrap">
+      <label>Max drive time <span class="val" id="driveVal">4.0h</span></label>
+      <input type="range" id="f-drive" min="1.5" max="4" step="0.25" value="4">
+    </div>
+    <div class="fgroup" style="min-width:220px;">
+      <label>Vibe</label>
+      <div class="chipset" id="vibeChips"></div>
+    </div>
+    <div class="fgroup" style="min-width:260px;">
+      <label>Accommodation type</label>
+      <div class="chipset" id="accomChips"></div>
+    </div>
+    <div class="fgroup">
+      <label>Focus on</label>
+      <select id="f-focus">
+        <option value="any">Balanced</option>
+        <option value="social">Social & group fun 🎉</option>
+        <option value="nature">Nature 🌿</option>
+        <option value="food">Food & cafés ☕</option>
+        <option value="relaxation">Relaxation 🌊</option>
+        <option value="adventure">Adventure ⛰️</option>
+        <option value="romance">Romance (just us) 🩷</option>
+      </select>
+    </div>
+    <div class="season-pill" id="seasonPill"></div>
+    <button class="reset-btn" id="resetFilters">Reset filters</button>
+  </div>
+
+  <div class="trending-row" id="trendingRow"></div>
+
+  <!-- EXPLORE / MAP VIEW -->
+  <div class="view active" id="view-explore">
+    <h2 class="view-title display">Explore the map</h2>
+    <p class="view-desc">A stylised view of your options around Sydney. Tap a pin to see the details — the map updates live with your filters.</p>
+    <div class="map-wrap">
+      <div class="map-canvas" id="mapCanvas">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="M10,15 C30,8 55,10 72,18 C90,26 94,45 88,62 C84,76 70,90 52,94 C36,97 20,88 14,72 C8,58 4,40 10,15 Z"
+                fill="rgba(255,255,255,0.35)" stroke="rgba(180,150,160,0.25)" stroke-width="0.4"/>
+          <g id="routeLines" stroke="#DD7F97" stroke-width="0.35" stroke-dasharray="1.2,1.4" fill="none" opacity="0.55"></g>
+        </svg>
+        <div class="sydney-pin" style="left:52%; top:55%;"><div class="dot2"></div><div class="lbl2">Sydney</div></div>
+        <div id="pinsLayer"></div>
+        <button class="more-btn map-more" id="mapMoreBtn" style="display:none;">+ More options</button>
+      </div>
+      <div class="detail-panel" id="detailPanel">
+        <div class="detail-empty"><div class="big">🩷</div>Tap a pin (or a destination card) to preview it here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESTINATIONS VIEW -->
+  <div class="view" id="view-destinations">
+    <h2 class="view-title display">Every escape, curated 🌸</h2>
+    <p class="view-desc">Tick up to 4 to send them to Compare. Tap a card to open the full detail panel below.</p>
+    <div class="grid" id="destGrid"></div>
+    <section class="panel" id="destDetailPanelWrap" style="display:none;margin-top:20px;"><div id="destDetailPanel"></div></section>
+  </div>
+
+  <!-- COMPARE VIEW -->
+  <div class="view" id="view-compare">
+    <h2 class="view-title display">The decision board</h2>
+    <p class="view-desc">Side-by-side, so you can actually decide. Select destinations from Explore or Destinations (up to 4).</p>
+    <div id="compareContent"></div>
+  </div>
+
+  <!-- ACTIVITIES VIEW -->
+  <div class="view" id="view-activities">
+    <h2 class="view-title display">Things to do</h2>
+    <p class="view-desc">Tap any activity to see every place that offers it, plus what else is on there. Seasonal ones only show up near their real-world dates.</p>
+    <div class="act-filter-row" id="actCatFilters"></div>
+    <div class="act-grid" id="actGrid"></div>
+  </div>
+
+  <!-- ITINERARY VIEW -->
+  <div class="view" id="view-itinerary">
+    <h2 class="view-title display">Your trip, planned</h2>
+    <p class="view-desc">Pick a destination to generate a day-by-day plan for your chosen dates.</p>
+    <div class="dest-picker" id="itinPicker"></div>
+    <section class="panel" id="itinContent"></section>
+  </div>
+
+  <!-- BUDGET VIEW -->
+  <div class="view" id="view-budget">
+    <h2 class="view-title display">What it'll actually cost</h2>
+    <p class="view-desc">Drag the sliders — the estimate updates for your destination, group size and per-person target.</p>
+    <div class="dest-picker" id="budgetPicker"></div>
+    <div class="budget-grid">
+      <section class="panel" id="budgetSliders"></section>
+      <section class="panel" id="budgetOutput"></section>
+    </div>
+  </div>
+
+</div>
+
+<button id="surpriseBtn">✨ Surprise me</button>
+<div id="compareBar">
+  <span id="compareBarText">0 selected</span>
+  <button class="clear" id="compareClearBtn">clear</button>
+  <button class="go" id="compareGoBtn">Compare →</button>
+</div>
+<div id="modalOverlay"><div class="modal-card"><button class="close-x" id="modalClose">✕</button><div id="modalInner"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<footer class="foot">Made for whichever weekend you pick — Sydney → somewhere quieter. 🌿</footer>
+
+<script>
+/* ============================ DATA ============================ */
+const CORE_DESTINATIONS = [
+  {id:"blue-mountains", name:"Blue Mountains", region:"Katoomba & Leura", vibeCategory:"mountain", vibeTag:"Misty Mountain Escape",
+    description:"Fog-wrapped valleys, roaring fireplaces and a main street built for slow, cold-hands-warm-drinks wandering.",
+    driveHours:1.75, driveLabel:"~1h 45m", costLevel:"mid", costLow:550, costHigh:650, climateZone:"mountain", connectivity:"Good",
+    scores:{social:7,nature:10,food:7,relaxation:8,adventure:7,romance:9},
+    activities:["Ride the Scenic World cableway & skyway over the valley","Walk the Wentworth Falls clifftop track at golden hour","Book a candlelit dinner on Leura's main strip"],
+    mustSee:["Three Sisters lookout at sunset","Leura Mall's boutique strip"],
+    bestFor:"Misty views, log fires and long lazy breakfasts — the classic Sydney escape, done properly.",
+    accommodation:["Boutique cabin","Cottage","Villa"], mapPos:{x:36,y:49}},
+  {id:"southern-highlands", name:"Southern Highlands", region:"Bowral", vibeCategory:"luxury", vibeTag:"Country Elegance",
+    description:"Manicured gardens, heritage hotels and cellar doors — the polished, grown-up version of a country weekend.",
+    driveHours:1.5, driveLabel:"~1h 30m", costLevel:"high", costLow:620, costHigh:720, climateZone:"mountain", connectivity:"Good",
+    scores:{social:6,nature:7,food:9,relaxation:9,adventure:5,romance:9},
+    activities:["Private tasting at a boutique cellar door","Slow stroll through Corbett Gardens","High tea at a heritage hotel"],
+    mustSee:["Bradman Museum grounds","Fitzroy Falls lookout"],
+    bestFor:"Elegant dinners, garden walks and a genuinely slower pace.",
+    accommodation:["Villa","Luxury retreat","Farm stay"], mapPos:{x:44,y:66}},
+  {id:"berry", name:"Berry", region:"South Coast hinterland", vibeCategory:"cozy", vibeTag:"Storybook Country Town",
+    description:"One perfect main street of bakeries, fudge shops and a pub with an open fire — postcard-pretty and unhurried.",
+    driveHours:2, driveLabel:"~2h", costLevel:"mid", costLow:500, costHigh:600, climateZone:"coastal", connectivity:"Good",
+    scores:{social:8,nature:7,food:9,relaxation:8,adventure:4,romance:8},
+    activities:["Browse Berry's courthouse markets (first Sunday)","Cheese and fudge tasting along the main street","Sunset walk on nearby Seven Mile Beach"],
+    mustSee:["The queue-worthy Berry sourdough bakery","The historic Berry Hotel fireplace"],
+    bestFor:"Cosy cafés, boutique shopping and a cottage-in-the-country feeling.",
+    accommodation:["Cottage","Tiny home","Farm stay"], mapPos:{x:47,y:80}},
+  {id:"kiama", name:"Kiama", region:"South Coast", vibeCategory:"coastal", vibeTag:"Blowhole Coastal Charm",
+    description:"Dramatic blowholes, rockpools and a working harbour — big coastal views for a short drive.",
+    driveHours:2, driveLabel:"~2h", costLevel:"mid", costLow:500, costHigh:620, climateZone:"coastal", connectivity:"Good",
+    scores:{social:8,nature:8,food:7,relaxation:7,adventure:6,romance:7},
+    activities:["Watch the Kiama Blowhole put on a show","Coastal walk out to Cathedral Rocks","Fish and chips looking over the harbour"],
+    mustSee:["Kiama Blowhole","Minnamurra Rainforest boardwalk"],
+    bestFor:"Dramatic coastal views without committing to a long drive.",
+    accommodation:["Apartment","Villa","Cottage"], mapPos:{x:50,y:75}},
+  {id:"kangaroo-valley", name:"Kangaroo Valley", region:"Southern Highlands hinterland", vibeCategory:"cozy", vibeTag:"Hidden Valley Hideaway",
+    description:"A green, quiet valley of river bends and paddocks — the closest thing to total switch-off within two hours of the city.",
+    driveHours:2.25, driveLabel:"~2h 15m", costLevel:"mid", costLow:520, costHigh:630, climateZone:"mountain", connectivity:"Patchy",
+    scores:{social:6,nature:9,food:6,relaxation:9,adventure:6,romance:8},
+    activities:["Kayak the Kangaroo River at your own pace","Walk across the historic Hampden suspension bridge","Stargaze from your cabin deck after dinner"],
+    mustSee:["Hampden Bridge","Fitzroy Falls (a short drive away)"],
+    bestFor:"Real quiet — birdsong mornings, a private cabin, no schedule.",
+    accommodation:["Glamping","Boutique cabin","Farm stay"], mapPos:{x:43,y:73}},
+  {id:"hunter-valley", name:"Hunter Valley", region:"Pokolbin", vibeCategory:"wine", vibeTag:"Classic Vineyard Weekend",
+    description:"Rows of vines, long lunches and the best excuse for an afternoon that starts with a wine flight and ends with cheese.",
+    driveHours:2, driveLabel:"~2h", costLevel:"high", costLow:600, costHigh:750, climateZone:"inland-wine", connectivity:"Good",
+    scores:{social:9,nature:6,food:9,relaxation:8,adventure:4,romance:9},
+    activities:["Cellar door hopping by e-bike","Chocolate and cheese pairing session","Sunrise hot air balloon (the splurge option)"],
+    mustSee:["Hunter Valley Gardens","The backroad drive through Wollombi Valley"],
+    bestFor:"Long lunches, wine flights and rolling vineyard views — NSW's go-to for a group wine weekend.",
+    accommodation:["Villa","Cottage","Luxury retreat"], mapPos:{x:56,y:29}},
+  {id:"port-stephens", name:"Port Stephens", region:"Mid North Coast", vibeCategory:"coastal", vibeTag:"Dolphin Coast Adventure",
+    description:"Sand dunes, dolphin pods and a marina full of seafood — more adrenaline than most weekends allow.",
+    driveHours:2.5, driveLabel:"~2h 30m", costLevel:"mid", costLow:550, costHigh:700, climateZone:"coastal", connectivity:"Good",
+    scores:{social:9,nature:8,food:6,relaxation:7,adventure:9,romance:7},
+    activities:["Dolphin-watching cruise at sunrise","Sandboarding down the Stockton dunes","Seafood dinner on the marina"],
+    mustSee:["Tomaree Head summit lookout","Stockton Sand Dunes"],
+    bestFor:"A shot of adrenaline built into the itinerary — great with a crew.",
+    accommodation:["Apartment","Villa","Glamping"], mapPos:{x:64,y:27}},
+  {id:"jervis-bay", name:"Jervis Bay", region:"South Coast", vibeCategory:"coastal", vibeTag:"Whitest Sand Escape",
+    description:"The whitest sand and calmest turquoise water in NSW, plus whale migration passing right by in season.",
+    driveHours:2.75, driveLabel:"~2h 45m", costLevel:"high", costLow:600, costHigh:750, climateZone:"coastal", connectivity:"Patchy",
+    scores:{social:7,nature:9,food:6,relaxation:8,adventure:6,romance:9},
+    activities:["Swim at Hyams Beach","Whale-watching cruise (seasonal)","Sunset picnic at Green Patch"],
+    mustSee:["Hyams Beach","Booderee National Park lookout"],
+    bestFor:"Postcard-white sand and water so calm it barely counts as a beach day.",
+    accommodation:["Villa","Boutique cabin","Cottage"], mapPos:{x:51,y:85}},
+  {id:"orange", name:"Orange", region:"Central West", vibeCategory:"wine", vibeTag:"Cool Climate Wine Escape",
+    description:"Cool-climate wine country without the Hunter crowds — orchards, mountain lookouts, and quiet cellar doors.",
+    driveHours:3.5, driveLabel:"~3h 30m", costLevel:"mid", costLow:500, costHigh:620, climateZone:"central-west", connectivity:"Good",
+    scores:{social:7,nature:6,food:8,relaxation:7,adventure:5,romance:7},
+    activities:["Cool-climate cellar door tastings","Visit an apple and cherry orchard (seasonal)","Scenic drive up Mount Canobolas"],
+    mustSee:["Borrodell Estate's hilltop views","Lake Canobolas"],
+    bestFor:"Wine country lovers who want it quiet.",
+    accommodation:["Farm stay","Villa","Cottage"], mapPos:{x:22,y:44}},
+  {id:"central-coast", name:"Central Coast", region:"Pearl Beach & Hawkesbury", vibeCategory:"coastal", vibeTag:"Sleepy Bay Secret",
+    description:"A tiny, low-key beach hamlet an hour from the city, right next to the Hawkesbury River's houseboat country.",
+    driveHours:1.25, driveLabel:"~1h 15m", costLevel:"low", costLow:450, costHigh:550, climateZone:"coastal", connectivity:"Good",
+    scores:{social:5,nature:7,food:5,relaxation:9,adventure:4,romance:7},
+    activities:["Swim at the near-empty Pearl Beach","Walk up to Warrah Lookout","Bring-your-own picnic right on the sand"],
+    mustSee:["Pearl Beach general store","Patonga wharf at sunset"],
+    bestFor:"Maximum relaxation for minimum drive time — or skip the house altogether and stay afloat.",
+    accommodation:["Cottage","Apartment","Tiny home","Cruise"], mapPos:{x:56,y:40}},
+  {id:"mudgee", name:"Mudgee", region:"Central West", vibeCategory:"wine", vibeTag:"Quiet Vineyard Escape",
+    description:"An under-the-radar wine region with heritage streets and none of the weekend crowds of the bigger names.",
+    driveHours:3.25, driveLabel:"~3h 15m", costLevel:"mid", costLow:500, costHigh:620, climateZone:"central-west", connectivity:"Good",
+    scores:{social:6,nature:6,food:8,relaxation:8,adventure:4,romance:8},
+    activities:["Boutique cellar door tastings","Farm-gate produce visit at a local orchard","Watch the sunset from Mudgee lookout"],
+    mustSee:["Robert Stein Vineyard","Historic Church Street"],
+    bestFor:"A genuinely under-the-radar wine escape.",
+    accommodation:["Farm stay","Cottage","Villa"], mapPos:{x:26,y:31}}
+];
+
+const EXTRA_DESTINATIONS = [
+  {id:"oberon", name:"Oberon", region:"Central Tablelands", vibeCategory:"mountain", vibeTag:"Cold Country Garden Escape",
+    description:"Frosty tablelands air, dense pine forest and the region's biggest cool-climate private garden.",
+    driveHours:3, driveLabel:"~3h", costLevel:"mid", costLow:500, costHigh:610, climateZone:"mountain", connectivity:"Patchy",
+    scores:{social:5,nature:8,food:6,relaxation:7,adventure:5,romance:7},
+    activities:["Wander Mayfield Garden's terraces (seasonal displays)","Explore nearby Jenolan Caves","Fireside dinner in the village"],
+    mustSee:["Mayfield Garden","Jenolan Caves"],
+    bestFor:"Proper cold-climate scenery without the Blue Mountains crowds.",
+    accommodation:["Cottage","Farm stay","Boutique cabin"], mapPos:{x:31,y:52}},
+  {id:"bundanoon", name:"Bundanoon", region:"Southern Highlands", vibeCategory:"cozy", vibeTag:"Rainforest Village Calm",
+    description:"A one-street highlands village wrapped in rainforest walking trails, known for its winter fireside culture.",
+    driveHours:1.75, driveLabel:"~1h 45m", costLevel:"mid", costLow:510, costHigh:610, climateZone:"mountain", connectivity:"Good",
+    scores:{social:5,nature:8,food:6,relaxation:9,adventure:5,romance:7},
+    activities:["Walk the Fairy Bower Falls loop","Browse the village's small book and antique shops","Settle in by the fire at a local inn"],
+    mustSee:["Fairy Bower Falls","Bundanoon Highlands Way lookout"],
+    bestFor:"A slower, quieter highlands alternative to Bowral.",
+    accommodation:["Cottage","Boutique cabin","Villa"], mapPos:{x:42,y:69}},
+  {id:"wollombi", name:"Wollombi", region:"Hunter Valley hinterland", vibeCategory:"wine", vibeTag:"Backroad Wine Village",
+    description:"A one-pub, one-general-store village at the end of a beautiful backroad — Hunter Valley's quiet cousin.",
+    driveHours:2.25, driveLabel:"~2h 15m", costLevel:"mid", costLow:490, costHigh:590, climateZone:"inland-wine", connectivity:"Patchy",
+    scores:{social:6,nature:7,food:6,relaxation:8,adventure:4,romance:8},
+    activities:["Drive the winding Wollombi Valley backroad","Small-batch cellar door tastings","Drinks at the historic Wollombi Tavern"],
+    mustSee:["Wollombi Tavern","Yengo National Park lookout"],
+    bestFor:"Hunter Valley wine country with almost nobody else around.",
+    accommodation:["Cottage","Tiny home","Farm stay"], mapPos:{x:52,y:33}},
+  {id:"robertson", name:"Robertson", region:"Southern Highlands", vibeCategory:"cozy", vibeTag:"Rainforest & Paddocks",
+    description:"Bright green dairy paddocks meeting dense rainforest, with a pie shop worth the trip on its own.",
+    driveHours:1.75, driveLabel:"~1h 45m", costLevel:"mid", costLow:500, costHigh:600, climateZone:"mountain", connectivity:"Patchy",
+    scores:{social:6,nature:8,food:7,relaxation:8,adventure:5,romance:7},
+    activities:["Walk the Yarrawa rainforest track","Farm-gate produce and animal visits","Pie stop at the village bakery"],
+    mustSee:["Kangaloon lookout","Robertson Pie Shop"],
+    bestFor:"A rustic, farm-forward alternative to the bigger highlands towns.",
+    accommodation:["Farm stay","Cottage","Glamping"], mapPos:{x:45,y:70}},
+  {id:"shoalhaven-nowra", name:"Shoalhaven (Nowra)", region:"South Coast", vibeCategory:"coastal", vibeTag:"Big-Group Coastal Base",
+    description:"A larger coastal hub near Jervis Bay with more spacious stays — the easiest option once your group grows.",
+    driveHours:2.5, driveLabel:"~2h 30m", costLevel:"mid", costLow:520, costHigh:650, climateZone:"coastal", connectivity:"Good",
+    scores:{social:9,nature:7,food:6,relaxation:7,adventure:6,romance:6},
+    activities:["Kayak the Shoalhaven River","Day-trip to Hyams Beach and Jervis Bay","Riverside dinner in Nowra"],
+    mustSee:["Nowra Wharf","Cambewarra Lookout"],
+    bestFor:"Groups who want Jervis Bay's beaches with easier, bigger accommodation.",
+    accommodation:["Villa","Apartment","Glamping"], mapPos:{x:53,y:82}}
+];
+
+const ACTIVITIES = [
+  {name:"Cellar door wine tasting", category:"Wineries", cost:"mid", desc:"Flights of local pours, usually with a view over the vines.", dest:["hunter-valley","orange","mudgee","southern-highlands","wollombi"], accomTag:"Villa"},
+  {name:"Sunrise hot air balloon", category:"Adventure", cost:"high", desc:"Float over the vineyards as the morning fog lifts.", dest:["hunter-valley"], accomTag:"Luxury retreat"},
+  {name:"Dolphin-watching cruise", category:"Animal Visits", cost:"mid", desc:"Pods are resident year-round in the bay — high odds of a sighting.", dest:["port-stephens","jervis-bay"]},
+  {name:"Whale-watching cruise", category:"Animal Visits", cost:"mid", desc:"Migrating humpbacks pass this stretch of coast in season.", dest:["jervis-bay","kiama","port-stephens","shoalhaven-nowra"], monthsActive:[5,6,7,8,9,10,11]},
+  {name:"Sandboarding the dunes", category:"Adventure", cost:"mid", desc:"Australia's largest coastal sand dunes, minus the desert flight.", dest:["port-stephens"]},
+  {name:"Kayaking the river", category:"Kayaking", cost:"low", desc:"Flat, slow water — no experience needed, just paddle and talk.", dest:["kangaroo-valley","jervis-bay","shoalhaven-nowra"], accomTag:"Glamping"},
+  {name:"Cable car & skyway", category:"Scenic Lookouts", cost:"mid", desc:"Glass-floored cars gliding over a 200m-deep valley.", dest:["blue-mountains"]},
+  {name:"Waterfall clifftop walk", category:"Waterfalls", cost:"low", desc:"Short, well-formed tracks to some of the state's best falls.", dest:["blue-mountains","kiama","southern-highlands","kangaroo-valley","bundanoon"]},
+  {name:"Fruit picking (apples & pears)", category:"Fruit Picking", cost:"low", desc:"Orchards open their rows for autumn apple and pear picking.", dest:["orange","bundanoon"], monthsActive:[3,4]},
+  {name:"Cherry picking season", category:"Fruit Picking", cost:"low", desc:"Pick-your-own cherry orchards open for the short summer harvest window.", dest:["orange"], monthsActive:[11,12]},
+  {name:"Farm stay animal encounters", category:"Animal Visits", cost:"mid", desc:"Feed the alpacas and lambs before breakfast — a real working farm, not a petting zoo.", dest:["kangaroo-valley","mudgee","orange","berry","robertson"], accomTag:"Farm stay"},
+  {name:"Hot springs bathhouse", category:"Hot Springs", cost:"mid", desc:"Heated mineral pools and a robe — the reset button of the trip.", dest:["southern-highlands","blue-mountains"], accomTag:"Luxury retreat"},
+  {name:"Bakery & café crawl", category:"Cafés & Bakeries", cost:"low", desc:"Sourdough, coffee, repeat — best done slowly, on foot.", dest:["berry","kiama","blue-mountains","southern-highlands","robertson"]},
+  {name:"Weekend markets", category:"Markets", cost:"low", desc:"Local produce, crafts and second-hand finds, usually with live music.", dest:["berry","kiama","southern-highlands"]},
+  {name:"Scenic lookout drive", category:"Scenic Drives", cost:"low", desc:"Wind through farmland and forest to a view worth the fuel.", dest:["orange","mudgee","jervis-bay","hunter-valley","wollombi"]},
+  {name:"Stargazing from the deck", category:"Stargazing", cost:"low", desc:"No city glow out here — bring a blanket and look up.", dest:["kangaroo-valley","mudgee","orange","central-coast","oberon"]},
+  {name:"Beach picnic & swim", category:"Beaches", cost:"low", desc:"Pack a rug, some cheese, and claim a quiet stretch of sand.", dest:["jervis-bay","central-coast","port-stephens","kiama","shoalhaven-nowra"]},
+  {name:"Suspension bridge walk", category:"Scenic Lookouts", cost:"low", desc:"A short, pretty walk across the valley's historic river crossing.", dest:["kangaroo-valley"]},
+  {name:"Chocolate & cheese pairing", category:"Food Experiences", cost:"mid", desc:"A guided tasting flight that pairs both, properly.", dest:["hunter-valley","southern-highlands"]},
+  {name:"Glamping under the stars", category:"Glamping", cost:"mid", desc:"Canvas walls, real beds, zero mozzies.", dest:["kangaroo-valley","port-stephens","robertson"], accomTag:"Glamping"},
+  {name:"Hawkesbury River houseboat cruise", category:"Cruises", cost:"high", desc:"Pilot your own houseboat up the Hawkesbury — no licence needed, just water views from bed.", dest:["central-coast"], accomTag:"Cruise"},
+  {name:"Sunset picnic in the national park", category:"Nature", cost:"low", desc:"Pick a headland, watch the colour change, stay till dark.", dest:["jervis-bay","central-coast"]},
+  {name:"Tulip Time Festival", category:"Flower Festivals", cost:"low", desc:"Corbett Gardens turns into a sea of tulips for Bowral's spring festival.", dest:["southern-highlands"], monthsActive:[9,10]},
+  {name:"Mayfield Garden seasonal festival", category:"Flower Festivals", cost:"mid", desc:"The southern hemisphere's largest cool-climate private garden, in full seasonal colour.", dest:["oberon"], monthsActive:[4,5,9,10]},
+  {name:"Hunter Valley Vintage Festival", category:"Seasonal Events", cost:"low", desc:"Grape harvest season — cellar doors open up their vineyards for picking and crushing.", dest:["hunter-valley"], monthsActive:[2,3]},
+  {name:"Hunter Valley Gardens Christmas Lights", category:"Seasonal Events", cost:"mid", desc:"An elaborate lights display across the gardens for the festive season.", dest:["hunter-valley"], monthsActive:[11,12,1]},
+  {name:"Orange F.O.O.D Week", category:"Seasonal Events", cost:"mid", desc:"A week of long-table dinners and producer tastings across the region.", dest:["orange"], monthsActive:[4]},
+  {name:"Bundanoon Winter Fires", category:"Seasonal Events", cost:"low", desc:"A cosy mid-winter village festival built entirely around fireplaces and warm food.", dest:["bundanoon"], monthsActive:[6,7]},
+  {name:"Spring wildflower walks", category:"Flower Festivals", cost:"low", desc:"Roadside and reserve wildflowers peak across the central west in spring.", dest:["mudgee","orange","wollombi"], monthsActive:[9,10]}
+];
+
+const ACCOM_TYPES = ["Tiny home","Glamping","Villa","Apartment","Cottage","Farm stay","Boutique cabin","Luxury retreat","Cruise"];
+
+const CLIMATE = {
+  mountain:{ summer:{temp:"16–24",condPool:["☀️ Sunny, cool nights","⛅ Partly cloudy","🌦️ Isolated showers"]},
+             autumn:{temp:"10–18",condPool:["🍂 Crisp & clear","🌫️ Misty mornings","🌥️ Overcast"]},
+             winter:{temp:"2–9",condPool:["❄️ Cold & foggy","🌧️ Wet & grey","🌤️ Clear & frosty"]},
+             spring:{temp:"9–18",condPool:["🌤️ Mild & bright","🌦️ Passing showers","💨 Breezy"]} },
+  coastal:{ summer:{temp:"20–27",condPool:["☀️ Warm & sunny","🌊 Sea breeze","⛅ Partly cloudy"]},
+            autumn:{temp:"16–22",condPool:["🌤️ Mild & clear","⛅ Partly cloudy","🌦️ Light showers"]},
+            winter:{temp:"9–17",condPool:["🌊 Cool & clear","🌧️ Showery","💨 Windy"]},
+            spring:{temp:"14–21",condPool:["🌸 Mild & breezy","☀️ Sunny","🌦️ Scattered showers"]} },
+  "inland-wine":{ summer:{temp:"22–30",condPool:["☀️ Hot & dry","⛅ Partly cloudy"]},
+            autumn:{temp:"14–23",condPool:["🍇 Warm & clear","🌥️ Mild & overcast"]},
+            winter:{temp:"5–15",condPool:["🌫️ Cold mornings, clear days","🌧️ Occasional rain"]},
+            spring:{temp:"12–22",condPool:["🌼 Mild & sunny","🌦️ Light showers"]} },
+  "central-west":{ summer:{temp:"20–31",condPool:["☀️ Hot & dry","⛈️ Storm risk"]},
+            autumn:{temp:"8–19",condPool:["🍂 Crisp, cool nights","🌤️ Clear"]},
+            winter:{temp:"-1–10",condPool:["❄️ Frosty mornings","🌫️ Foggy"]},
+            spring:{temp:"8–20",condPool:["🌷 Mild, blossoms out","🌦️ Showery"]} }
+};
+
+const MODE_LIST = [
+  {id:"couple", label:"Couple", emoji:"💑", subtitle:"Just the two of you — decided. 🩷", defaultGroupSize:2, defaultFocus:"romance",
+    dinnerSuffix:"", morningSuffix:"", note:"Romance-forward picks, cosy stays built for two. 🩷"},
+  {id:"girls", label:"Girls Trip", emoji:"💅", subtitle:"The group chat, IRL. ✨", defaultGroupSize:4, defaultFocus:"food",
+    dinnerSuffix:" — somewhere cute enough for a photo before anyone starts eating.", morningSuffix:" — slow, giggly, coffee-in-hand mornings.",
+    note:"Brunch, wine and spa-forward picks — cute stays and something Instagrammable at every stop. 💅🌸"},
+  {id:"friends", label:"Friends", emoji:"🎉", subtitle:"Your crew, one trip, zero group-chat chaos.", defaultGroupSize:5, defaultFocus:"social",
+    dinnerSuffix:" — grab a table that fits everyone and order too much.", morningSuffix:" — whoever's up first can put the coffee on.",
+    note:"Social-forward picks — good wine, good banter, stays with room to spread out."},
+  {id:"family", label:"Family", emoji:"👨‍👩‍👧‍👦", subtitle:"Everyone from the toddler to the grandparents, sorted. 🌿", defaultGroupSize:4, defaultFocus:"relaxation",
+    dinnerSuffix:" — look for something with a kids' menu or easy share plates.", morningSuffix:" — no rush, little legs set the pace.",
+    note:"Relaxed, nature-forward picks with space for everyone and easy-going stays."},
+  {id:"solo", label:"Solo", emoji:"🎒", subtitle:"Just you, your own pace, no compromises. ✨", defaultGroupSize:1, defaultFocus:"adventure",
+    dinnerSuffix:" — bar seating or a communal table makes solo dining easy here.", morningSuffix:" — move at whatever pace you feel like.",
+    note:"Flexible, easy-to-navigate picks — and a nod to how connected (or not) each spot is."}
+];
+
+/* ============================ STATE ============================ */
+function computeDefaultDates(){
+  const today = new Date();
+  const day = today.getDay();
+  const diff = (5 - day + 7) % 7;
+  const friday = new Date(today); friday.setDate(today.getDate()+diff);
+  const sunday = new Date(friday); sunday.setDate(friday.getDate()+2);
+  return {start:friday, end:sunday};
+}
+const defaults = computeDefaultDates();
+
+const state = {
+  filters:{budget:"any", maxDrive:4, vibes:new Set(), accom:new Set(), focus:"any"},
+  compareSet:new Set(), detailId:null, activeTab:"explore",
+  itinDest:null, budgetDest:null, actCatFilter:"all",
+  tripStart: defaults.start, tripEnd: defaults.end,
+  group:{size:2}, budgetPP:{min:200, max:350}, mode:"couple",
+  showMoreDest:false, liveSeed:0, liveUpdatedAt:new Date(), trending:[]
+};
+state.season = seasonFromDate(state.tripStart);
+
+const budgetSliderVals = {accommodation:0, food:0, activities:0};
+
+/* ============================ HELPERS ============================ */
+function allDestinations(){ return CORE_DESTINATIONS.concat(EXTRA_DESTINATIONS); }
+function poolDestinations(){ return state.showMoreDest ? allDestinations() : CORE_DESTINATIONS; }
+const byId = id => allDestinations().find(d=>d.id===id);
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function seasonFromDate(date){ const m=date.getMonth()+1; if(m===12||m<=2) return 'summer'; if(m<=5) return 'autumn'; if(m<=8) return 'winter'; return 'spring'; }
+function seasonLabel(s){ return {summer:"☀️ Summer",autumn:"🍂 Autumn",winter:"❄️ Winter",spring:"🌸 Spring"}[s]; }
+function romanceTier(d){ const r=d.scores.romance; return r>=8?"High":r>=6?"Medium":"Low"; }
+function socialTier(d){ const s=d.scores.social; return s>=8?"High":s>=6?"Medium":"Low"; }
+function girlsTripTier(d){ const v=(d.scores.social+d.scores.food)/2; return v>=8?"High":v>=6?"Medium":"Low"; }
+function familyFit(d){
+  const roomy = d.accommodation.includes('Villa')||d.accommodation.includes('Farm stay')||d.accommodation.includes('Cottage');
+  if(d.scores.adventure>=8) return "Best for older kids/teens";
+  if(roomy && d.scores.relaxation>=7) return "Great for all ages";
+  return "Good with a bit of planning";
+}
+function soloFit(d){
+  if(d.connectivity==="Patchy" && d.scores.relaxation<8) return "Doable, but remote — let someone know your plans";
+  if(d.accommodation.includes('Apartment')||d.accommodation.includes('Boutique cabin')||d.accommodation.includes('Tiny home')) return "Easy — walkable towns, simple to navigate alone";
+  return "Good, just plan ahead for quieter stretches";
+}
+function modeNoteHTML(d){
+  const m = state.mode;
+  if(m==='couple') return `🩷 Romance: ${romanceTier(d)}`;
+  if(m==='girls') return `💅 Girls-trip energy: ${girlsTripTier(d)}`;
+  if(m==='friends') return `🎉 Group energy: ${socialTier(d)}`;
+  if(m==='family') return `👨‍👩‍👧 Family fit: ${familyFit(d)}`;
+  return `🎒 Solo-friendly: ${soloFit(d)} · 📶 ${d.connectivity} signal`;
+}
+function pseudoRand(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))>>>0; } return (h%1000)/1000; }
+function getWeather(d){
+  const base = CLIMATE[d.climateZone][state.season];
+  const seed = pseudoRand(d.id+state.season+state.liveSeed);
+  const jitter = Math.round((seed-0.5)*4);
+  const [lo,hi] = base.temp.split('–').map(n=>parseInt(n));
+  const conds = base.condPool;
+  const cond = conds[Math.floor(seed*conds.length)%conds.length];
+  return {temp:`${lo+jitter}–${hi+jitter}°C`, cond};
+}
+function airbnbLink(name){ return `https://www.airbnb.com/s/${encodeURIComponent(name+', NSW, Australia')}/homes`; }
+function bookingLink(name){ return `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(name+', NSW, Australia')}`; }
+function googleLink(q){ return `https://www.google.com/search?q=${encodeURIComponent(q)}`; }
+function suggestedGroupFit(d){
+  const a = d.accommodation;
+  if(a.includes("Villa")||a.includes("Farm stay")) return "Couples to big groups (up to 8+)";
+  if(a.includes("Apartment")||a.includes("Cottage")) return "Couples & small groups (up to 4)";
+  return "Best for couples";
+}
+function accomFactor(size){ if(size<=2) return 1; if(size<=5) return 0.82; if(size<=10) return 0.65; return 0.55; }
+function matchesFilters(d){
+  const f = state.filters;
+  if(f.budget!=="any" && d.costLevel!==f.budget) return false;
+  if(d.driveHours > f.maxDrive) return false;
+  if(f.vibes.size>0 && !f.vibes.has(d.vibeCategory)) return false;
+  if(f.accom.size>0 && !d.accommodation.some(a=>f.accom.has(a))) return false;
+  return true;
+}
+function visibleDestinations(){
+  let list = poolDestinations().filter(matchesFilters);
+  if(state.filters.focus!=="any") list = list.slice().sort((a,b)=> b.scores[state.filters.focus]-a.scores[state.filters.focus]);
+  return list;
+}
+function showToast(msg){
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(window._toastTimer); window._toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+/* ============================ HEADER / TRIP SETUP ============================ */
+function renderHeaderPills(){
+  const totalMin = state.budgetPP.min*state.group.size, totalMax = state.budgetPP.max*state.group.size;
+  document.getElementById('headerPills').innerHTML = `
+    <div class="pill blush">📅 ${state.tripStart.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}–${state.tripEnd.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</div>
+    <div class="pill sky">👥 ${state.group.size} ${state.group.size===1?'person':'people'}</div>
+    <div class="pill">💰 $${totalMin}–${totalMax} total</div>
+    <button class="pill refresh" id="refreshBtn">🔄 Refresh forecast</button>
+    <div class="pill updated" id="updatedPill">Updated ${state.liveUpdatedAt.toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'})}</div>
+  `;
+  document.getElementById('refreshBtn').addEventListener('click', refreshLiveData);
+}
+function currentMode(){ return MODE_LIST.find(m=>m.id===state.mode); }
+function updateBrandSubtitle(){ document.getElementById('brandSub').textContent = currentMode().subtitle; }
+function selectMode(id){
+  const m = MODE_LIST.find(x=>x.id===id); if(!m) return;
+  state.mode = id; state.group.size = m.defaultGroupSize; state.filters.focus = m.defaultFocus;
+  const focusSel = document.getElementById('f-focus'); if(focusSel) focusSel.value = m.defaultFocus;
+  syncAfterSetupChange(); updateBrandSubtitle();
+}
+function renderTripSetup(){
+  const modeBtnsEl = document.getElementById('modeBtns');
+  modeBtnsEl.innerHTML = MODE_LIST.map(m=>`<button class="group-btn ${state.mode===m.id?'on':''}" data-mode="${m.id}">${m.emoji} ${m.label}</button>`).join("");
+  modeBtnsEl.querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=> selectMode(b.dataset.mode)));
+  document.getElementById('modeNote').textContent = currentMode().note;
+  document.getElementById('tripStartInput').value = fmtDate(state.tripStart);
+  document.getElementById('tripEndInput').value = fmtDate(state.tripEnd);
+  const groupBtnsEl = document.getElementById('groupBtns');
+  const presets = [{label:"Just us (2)", size:2},{label:"Small group (4)", size:4},{label:"Big group (8)", size:8}];
+  groupBtnsEl.innerHTML = presets.map(p=>`<button class="group-btn ${state.group.size===p.size?'on':''}" data-size="${p.size}">${p.label}</button>`).join("");
+  groupBtnsEl.querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=>{ state.group.size = parseInt(b.dataset.size); syncAfterSetupChange(); }));
+  document.getElementById('groupCustom').value = state.group.size;
+  document.getElementById('ppMin').value = state.budgetPP.min;
+  document.getElementById('ppMax').value = state.budgetPP.max;
+  const totalMin = state.budgetPP.min*state.group.size, totalMax = state.budgetPP.max*state.group.size;
+  document.getElementById('setupTotal').innerHTML = `${seasonLabel(state.season)} trip for <strong>${state.group.size}</strong><br>Est. total: <strong>$${totalMin}–${totalMax}</strong>`;
+}
+function touchUpdated(){ state.liveUpdatedAt = new Date(); }
+function syncAfterSetupChange(){ touchUpdated(); renderHeaderPills(); renderTripSetup(); render(); }
+document.getElementById('tripStartInput').addEventListener('change', e=>{
+  const v = new Date(e.target.value); if(isNaN(v)) return;
+  state.tripStart = v; if(state.tripEnd < v){ state.tripEnd = new Date(v); state.tripEnd.setDate(v.getDate()+2); }
+  state.season = seasonFromDate(state.tripStart); syncAfterSetupChange();
+});
+document.getElementById('tripEndInput').addEventListener('change', e=>{
+  const v = new Date(e.target.value); if(isNaN(v)) return; state.tripEnd = v; syncAfterSetupChange();
+});
+document.getElementById('groupCustom').addEventListener('change', e=>{
+  const v = Math.max(1, Math.min(30, parseInt(e.target.value)||2)); state.group.size = v; syncAfterSetupChange();
+});
+document.getElementById('ppMin').addEventListener('change', e=>{ state.budgetPP.min = parseInt(e.target.value)||0; if(state.budgetPP.min>state.budgetPP.max) state.budgetPP.max=state.budgetPP.min; syncAfterSetupChange(); });
+document.getElementById('ppMax').addEventListener('change', e=>{ state.budgetPP.max = parseInt(e.target.value)||0; if(state.budgetPP.max<state.budgetPP.min) state.budgetPP.min=state.budgetPP.max; syncAfterSetupChange(); });
+
+function refreshLiveData(){
+  state.liveSeed++;
+  const pool = poolDestinations();
+  state.trending = pool.slice().sort(()=>0.5-Math.random()).slice(0,3).map(d=>d.id);
+  touchUpdated();
+  renderHeaderPills();
+  render(); renderTrending();
+  showToast("✨ Forecast & trending picks refreshed just now");
+}
+
+/* ============================ NAV ============================ */
+document.getElementById('tabNav').addEventListener('click', e=>{ const btn=e.target.closest('.tab-btn'); if(btn) setTab(btn.dataset.tab); });
+function setTab(tab){
+  state.activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.view').forEach(v=> v.classList.remove('active'));
+  document.getElementById('view-'+tab).classList.add('active');
+  const showTop = (tab==="explore");
+  document.getElementById('tripSetupPanel').style.display = showTop ? "block":"none";
+  document.getElementById('searchPanel').style.display = showTop ? "block":"none";
+  document.getElementById('filterBarWrap').style.display = (tab==="explore"||tab==="destinations"||tab==="activities") ? "flex" : "none";
+  document.getElementById('trendingRow').style.display = showTop ? "flex":"none";
+  render();
+}
+
+/* ============================ FILTER UI ============================ */
+const VIBE_LIST = [{id:"mountain",label:"Mountain 🏔️"},{id:"coastal",label:"Coastal 🌊"},{id:"wine",label:"Wine country 🍷"},{id:"cozy",label:"Cozy 🌿"},{id:"luxury",label:"Luxury ✨"}];
+const vibeChipsEl = document.getElementById('vibeChips');
+VIBE_LIST.forEach(v=>{
+  const b=document.createElement('button'); b.className='chip-toggle'; b.textContent=v.label; b.dataset.vibe=v.id;
+  b.addEventListener('click', ()=>{ if(state.filters.vibes.has(v.id)) state.filters.vibes.delete(v.id); else state.filters.vibes.add(v.id); b.classList.toggle('on'); render(); });
+  vibeChipsEl.appendChild(b);
+});
+const accomChipsEl = document.getElementById('accomChips');
+ACCOM_TYPES.forEach(a=>{
+  const b=document.createElement('button'); b.className='chip-toggle'; b.textContent=a; b.dataset.accom=a;
+  b.addEventListener('click', ()=>{ if(state.filters.accom.has(a)) state.filters.accom.delete(a); else state.filters.accom.add(a); b.classList.toggle('on'); render(); });
+  accomChipsEl.appendChild(b);
+});
+document.getElementById('f-budget').addEventListener('change', e=>{state.filters.budget=e.target.value; render();});
+document.getElementById('f-focus').addEventListener('change', e=>{state.filters.focus=e.target.value; render();});
+const driveSlider = document.getElementById('f-drive');
+driveSlider.addEventListener('input', e=>{ state.filters.maxDrive=parseFloat(e.target.value); document.getElementById('driveVal').textContent=state.filters.maxDrive.toFixed(2).replace(/\.?0+$/,'')+"h"; render(); });
+document.getElementById('resetFilters').addEventListener('click', ()=>{
+  state.filters={budget:"any",maxDrive:4,vibes:new Set(),accom:new Set(),focus:"any"};
+  document.getElementById('f-budget').value="any"; document.getElementById('f-focus').value="any";
+  driveSlider.value=4; document.getElementById('driveVal').textContent="4h";
+  document.querySelectorAll('.chip-toggle').forEach(c=>c.classList.remove('on'));
+  render();
+});
+function renderSeasonPill(){ document.getElementById('seasonPill').textContent = `${seasonLabel(state.season)} · ${state.tripStart.toLocaleDateString('en-AU',{month:'long'})}`; }
+
+/* ============================ TRENDING ============================ */
+function renderTrending(){
+  if(state.trending.length===0) state.trending = poolDestinations().slice(0,3).map(d=>d.id);
+  document.getElementById('trendingRow').innerHTML = `<span style="font-size:11.5px;color:var(--muted);font-weight:700;align-self:center;">TRENDING NOW</span>` +
+    state.trending.map(id=>{ const d=byId(id); if(!d) return ""; return `<div class="trending-chip" data-open="${d.id}"><span class="flame">🔥</span>${d.name}</div>`; }).join("");
+  document.getElementById('trendingRow').querySelectorAll('[data-open]').forEach(el=> el.addEventListener('click', ()=>{ setTab('destinations'); openDestDetail(el.dataset.open); }));
+}
+
+/* ============================ SEARCH / SUGGESTIONS ============================ */
+const STOPWORDS = new Set(["the","and","for","are","but","with","this","that","have","has","was","were","you","your","yourself","looking","look","some","somewhere","where","who","what","when","how","why","from","into","about","just","still","need","needs","wanting","would","could","should","really","very","also","get","got","one","two","yo","old","year","years","trip","getaway","weekend","nsw","sydney","access","away","out","not"]);
+const INTEREST_RULES = [
+  {re:/musician|music|artist|creative|paint|writer?|writing|photograph/, destBoost:{nature:0.4,food:0.2}, actCats:["Scenic Lookouts","Waterfalls","Cafés & Bakeries"], why:"quiet, creative-friendly spots"},
+  {re:/wifi|internet|connectivity|remote ?work|digital nomad|laptop|work trip/, connectivity:"Good", why:"reliable wifi/signal"},
+  {re:/escape|disconnect|unplug|off.?grid|no signal|switch off|unwind/, destBoost:{relaxation:0.4}, connectivityBoost:"Patchy", why:"a genuine escape"},
+  {re:/hik(e|ing)|trek|walking track|trail/, actCats:["Waterfalls","Scenic Lookouts"], destBoost:{nature:0.3,adventure:0.2}, why:"hiking & trails"},
+  {re:/wine|foodie|cheese|cellar|vineyard|wine.?tast/, destVibe:"wine", actCats:["Wineries","Food Experiences"], why:"wine & food"},
+  {re:/yoga|wellness|spa|meditat/, actCats:["Hot Springs"], destBoost:{relaxation:0.4}, why:"wellness & slowing down"},
+  {re:/kayak|paddle|watersport|surf|swim|beach/, actCats:["Kayaking","Beaches"], destVibe:"coastal", why:"water & beach time"},
+  {re:/wildlife|animal|dolphin|whale|farm animal|alpaca/, actCats:["Animal Visits"], why:"wildlife & animals"},
+  {re:/flower|garden|botanic|bloom|tulip/, actCats:["Flower Festivals"], why:"gardens & flowers"},
+  {re:/star(gaz)?|astronomy|night sky/, actCats:["Stargazing"], why:"stargazing"},
+  {re:/dog|pet/, accomIncludes:["Cottage","Farm stay"], why:"pet-friendly-style stays"},
+  {re:/kid|child|toddler|family/, accomIncludes:["Villa","Farm stay","Cottage"], destBoost:{adventure:-0.3}, why:"family-friendly"},
+  {re:/party|nightlife|social|group fun/, destBoost:{social:0.5}, why:"social energy"},
+  {re:/quiet|introvert|solo|alone|by myself/, destBoost:{relaxation:0.3,social:-0.2}, why:"quiet & low-key"},
+  {re:/cruise|houseboat|boat/, actCats:["Cruises"], why:"cruise/houseboat stays"},
+  {re:/cold|snow|frost|winter escape/, destBoost:{nature:0.2}, climateZones:["mountain","central-west"], why:"cold-climate scenery"},
+  {re:/adrenalin|thrill|adventure|active/, destBoost:{adventure:0.5}, why:"adventure & adrenaline"}
+];
+document.getElementById('suggestBtn').addEventListener('click', runSuggestions);
+document.getElementById('suggestInput').addEventListener('keydown', e=>{ if(e.key==='Enter') runSuggestions(); });
+function runSuggestions(){
+  const q = document.getElementById('suggestInput').value.toLowerCase().trim();
+  const resultsEl = document.getElementById('suggestResults');
+  if(!q){ resultsEl.innerHTML = `<div class="search-hint">Type something above to get matched suggestions.</div>`; return; }
+  const words = q.split(/[^a-z0-9]+/).filter(w=> w.length>=3 && !STOPWORDS.has(w));
+  const scored = allDestinations().map(d=>{
+    let score=0, why=[];
+    const hay = (d.name+" "+d.region+" "+d.vibeTag+" "+d.description+" "+d.bestFor+" "+d.vibeCategory+" "+d.accommodation.join(" ")+" "+d.activities.join(" ")+" "+d.mustSee.join(" ")).toLowerCase();
+    words.forEach(w=>{ if(hay.includes(w)){ score+=2; why.push(w); } });
+    if(/cheap|afforda|budget|low.?cost|student/.test(q) && d.costLevel==='low'){ score+=3; why.push('budget-friendly'); }
+    if(/luxury|fancy|splurge|treat|indulg/.test(q) && d.costLevel==='high'){ score+=3; why.push('higher-end'); }
+    if(/close|short|near|quick/.test(q)){ score += Math.max(0,(4-d.driveHours)); why.push('short drive'); }
+    if(/far|road trip|long drive/.test(q)){ score += d.driveHours; why.push('further afield'); }
+    if(/big group|group of|friends|family|group/.test(q) && (d.accommodation.includes('Villa')||d.accommodation.includes('Farm stay'))){ score+=3; why.push('group-friendly'); }
+    if(/whale/.test(q) && ACTIVITIES.some(a=>a.name.includes('Whale')&&a.dest.includes(d.id))){ score+=3; why.push('whale season'); }
+    ['social','nature','food','relaxation','adventure','romance'].forEach(k=>{ if(q.includes(k)||(k==='food'&&/caf|eat/.test(q))||(k==='social'&&/group|crew|friends|fun/.test(q))){ score += d.scores[k]/3; why.push(k); } });
+    INTEREST_RULES.forEach(rule=>{
+      if(!rule.re.test(q)) return;
+      score += 2;
+      if(rule.destBoost){ Object.keys(rule.destBoost).forEach(k=>{ if(d.scores[k]!==undefined) score += d.scores[k]*rule.destBoost[k]; }); }
+      if(rule.destVibe && d.vibeCategory===rule.destVibe) score += 3;
+      if(rule.connectivity && d.connectivity===rule.connectivity) score += 4;
+      if(rule.connectivityBoost && d.connectivity===rule.connectivityBoost) score += 2;
+      if(rule.accomIncludes && d.accommodation.some(a=>rule.accomIncludes.includes(a))) score += 2;
+      if(rule.climateZones && rule.climateZones.includes(d.climateZone)) score += 2;
+      if(rule.actCats && ACTIVITIES.some(a=>rule.actCats.includes(a.category)&&a.dest.includes(d.id))) score += 2;
+      why.push(rule.why);
+    });
+    return {d, score, why:[...new Set(why)].slice(0,4)};
+  }).filter(r=>r.score>0).sort((a,b)=>b.score-a.score).slice(0,4);
+
+  const actScored = ACTIVITIES.map(a=>{
+    let score=0; const hay=(a.name+" "+a.category+" "+a.desc).toLowerCase();
+    words.forEach(w=>{ if(hay.includes(w)) score+=2; });
+    INTEREST_RULES.forEach(rule=>{ if(rule.re.test(q) && rule.actCats && rule.actCats.includes(a.category)) score+=3; });
+    return {a,score};
+  }).filter(r=>r.score>0).sort((a,b)=>b.score-a.score).slice(0,3);
+
+  let html="";
+  if(scored.length){
+    html += `<div class="sugg-sub">Matching destinations</div>` + scored.map(r=>`
+      <div class="sugg-card" data-open="${r.d.id}">
+        <div><div class="sname">${r.d.name}</div><div class="swhy">Matched: ${r.why.join(', ')||'general fit'}</div></div>
+        <button>View →</button>
+      </div>`).join("");
+  }
+  if(actScored.length){
+    html += `<div class="sugg-sub">Matching activities</div>` + actScored.map(r=>`
+      <div class="sugg-card sugg-act" data-act="${allActIndex(r.a)}">
+        <div><div class="sname">${r.a.name}</div><div class="swhy">${r.a.category}</div></div>
+        <button>See places →</button>
+      </div>`).join("");
+  }
+  if(!scored.length && !actScored.length){
+    html = `<div class="search-hint">No strong matches — try a vibe word, a hobby ("hiking", "wine", "music"), a need ("wifi", "quiet"), or a budget word ("cheap", "luxury").</div>`;
+  }
+  resultsEl.innerHTML = html;
+  resultsEl.querySelectorAll('[data-open]').forEach(el=> el.addEventListener('click', ()=>{ setTab('destinations'); openDestDetail(el.dataset.open); }));
+  resultsEl.querySelectorAll('[data-act]').forEach(el=> el.addEventListener('click', ()=>{ setTab('activities'); openActivityModal(parseInt(el.dataset.act)); }));
+}
+function allActIndex(actObj){ return ACTIVITIES.indexOf(actObj); }
+
+/* ============================ MODAL (generic) ============================ */
+function openModal(html){ document.getElementById('modalInner').innerHTML = html; document.getElementById('modalOverlay').classList.add('show'); }
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target.id==='modalOverlay') closeModal(); });
+
+/* ============================ MAP ============================ */
+function renderMap(){
+  const layer=document.getElementById('pinsLayer'), routes=document.getElementById('routeLines');
+  layer.innerHTML=""; routes.innerHTML="";
+  const visible = new Set(visibleDestinations().map(d=>d.id));
+  poolDestinations().forEach(d=>{
+    const isVisible = visible.has(d.id);
+    const pin=document.createElement('div');
+    pin.className='pin'+(isVisible?'':' faded')+(state.detailId===d.id?' active':'');
+    pin.style.left=d.mapPos.x+"%"; pin.style.top=d.mapPos.y+"%";
+    pin.innerHTML=`<div class="dot"></div><div class="lbl">${d.name}</div>`;
+    pin.addEventListener('click', ()=> selectDetail(d.id));
+    layer.appendChild(pin);
+    const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+    line.setAttribute("x1",52); line.setAttribute("y1",55); line.setAttribute("x2",d.mapPos.x); line.setAttribute("y2",d.mapPos.y);
+    line.setAttribute("opacity", isVisible?"0.55":"0.12");
+    routes.appendChild(line);
+  });
+  const moreBtn = document.getElementById('mapMoreBtn');
+  if(!state.showMoreDest){ moreBtn.style.display='block'; moreBtn.textContent = `+ ${EXTRA_DESTINATIONS.length} more options`; }
+  else moreBtn.style.display='none';
+  renderDetailPanel();
+}
+document.getElementById('mapMoreBtn').addEventListener('click', ()=>{ state.showMoreDest=true; render(); });
+
+function scoreBarsHTML(scores){
+  const labels={social:"Social",nature:"Nature",food:"Food",relaxation:"Relax",adventure:"Adventure"};
+  return Object.keys(labels).map(k=>`<div class="score-row"><div class="label">${labels[k]}</div><div class="bar"><i style="width:${scores[k]*10}%"></i></div><div class="num">${scores[k]}</div></div>`).join("");
+}
+function accomChipsHTML(d){ return `<div class="accom-row">${d.accommodation.map(a=>`<span class="accom-chip">${a}</span>`).join("")}</div>`; }
+function bookRowHTML(d){ return `<div class="book-row">
+    <a class="book-link" href="${airbnbLink(d.name)}" target="_blank" rel="noopener">🏡 Airbnb stays</a>
+    <a class="book-link" href="${bookingLink(d.name)}" target="_blank" rel="noopener">🛏️ Booking.com hotels</a>
+  </div>`; }
+function detailHTML(d){
+  const w = getWeather(d);
+  return `
+    <div class="dp-head">
+      <div>
+        <div class="vibe-tag">${d.vibeTag}</div>
+        <h3 class="display">${d.name}</h3>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">${d.region} · ${d.driveLabel} drive</div>
+      </div>
+      <button class="dp-close" title="Close" onclick="clearDetail()">✕</button>
+    </div>
+    <div style="margin-top:10px;"><span class="weather-chip">${w.cond} · ${w.temp}</span></div>
+    <p style="font-size:13.5px;color:var(--ink);line-height:1.55;margin:12px 0 0;">${d.description}</p>
+    <div class="dp-scores">${scoreBarsHTML(d.scores)}</div>
+    <div class="dp-section"><h4>3 things to do</h4><ul>${d.activities.map(a=>`<li>${a}</li>`).join("")}</ul></div>
+    <div class="dp-section"><h4>Must-see</h4><ul>${d.mustSee.map(a=>`<li>${a}</li>`).join("")}</ul></div>
+    <div class="dp-bestfor"><strong>Best for:</strong> ${d.bestFor}<br><strong>👥 Group fit:</strong> ${suggestedGroupFit(d)}</div>
+    <div class="romance-note" style="margin-top:8px;">${modeNoteHTML(d)}${state.mode!=='solo'?` · 📶 Connectivity: ${d.connectivity}`:''}</div>
+    <div class="dp-section"><h4>Stay options</h4>${accomChipsHTML(d)}${bookRowHTML(d)}</div>
+    <div class="dp-linkrow">
+      <button class="btn ghost" onclick="setTab('itinerary'); pickItinDest('${d.id}')">📅 Build itinerary</button>
+      <button class="btn primary" onclick="toggleCompare('${d.id}')">${state.compareSet.has(d.id)?'✓ In compare':'⚖️ Add to compare'}</button>
+    </div>
+  `;
+}
+function renderDetailPanel(){
+  const panel=document.getElementById('detailPanel');
+  if(!state.detailId){ panel.innerHTML=`<div class="detail-empty"><div class="big">🩷</div>Tap a pin (or a destination card) to preview it here.</div>`; return; }
+  panel.innerHTML = detailHTML(byId(state.detailId));
+}
+function selectDetail(id){ state.detailId=id; renderMap(); renderDestGrid(); }
+function clearDetail(){ state.detailId=null; renderMap(); renderDestGrid(); }
+
+/* ============================ DESTINATIONS ============================ */
+function renderDestGrid(){
+  const grid=document.getElementById('destGrid');
+  const list = visibleDestinations();
+  const stampByVibe={mountain:"🏔️",coastal:"🌊",wine:"🍷",cozy:"🌿",luxury:"✨"};
+  grid.innerHTML = list.map(d=>{
+    const mainKeys=['social','nature','food','relaxation','adventure'];
+    const avg=mainKeys.map(k=>d.scores[k]); const w=getWeather(d);
+    return `<div class="postcard" data-id="${d.id}">
+      <div class="stamp">${stampByVibe[d.vibeCategory]}</div>
+      <div class="top-strip"></div>
+      <div class="vibe-tag">${d.vibeTag}</div>
+      <h3>${d.name}</h3>
+      <p class="desc">${d.description}</p>
+      <div class="meta-row">
+        <div class="meta-chip">🚗 ${d.driveLabel}</div>
+        <div class="meta-chip">💰 $${d.costLow}–${d.costHigh}pc</div>
+        <span class="weather-chip">${w.cond} ${w.temp}</span>
+      </div>
+      <div class="group-badge">👥 ${suggestedGroupFit(d)}</div>
+      <div class="romance-note">${modeNoteHTML(d)}</div>
+      <div class="score-mini">${avg.map(v=>`<div class="bar"><i style="width:${v*10}%"></i></div>`).join("")}</div>
+      <div class="card-actions">
+        <button class="btn primary" data-open="${d.id}">View detail</button>
+        <button class="btn ghost" data-itin="${d.id}">Itinerary</button>
+        <label class="compare-check"><input type="checkbox" data-compare="${d.id}" ${state.compareSet.has(d.id)?'checked':''}>Compare</label>
+      </div>
+    </div>`;
+  }).join("") || `<p style="color:var(--muted);padding:30px;text-align:center;">No destinations match these filters — try widening your drive time or clearing a filter.</p>`;
+  if(!state.showMoreDest){
+    grid.innerHTML += `<div class="more-btn-wrap"><button class="more-btn" id="gridMoreBtn">+ ${EXTRA_DESTINATIONS.length} more options (hidden gems)</button></div>`;
+  }
+  grid.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', e=>{ e.stopPropagation(); openDestDetail(b.dataset.open); }));
+  grid.querySelectorAll('[data-itin]').forEach(b=> b.addEventListener('click', e=>{ e.stopPropagation(); setTab('itinerary'); pickItinDest(b.dataset.itin); }));
+  grid.querySelectorAll('[data-compare]').forEach(cb=> cb.addEventListener('click', e=>{ e.stopPropagation(); toggleCompare(cb.dataset.compare); }));
+  grid.querySelectorAll('.postcard').forEach(card=> card.addEventListener('click', ()=> openDestDetail(card.dataset.id)));
+  const gridMoreBtn = document.getElementById('gridMoreBtn');
+  if(gridMoreBtn) gridMoreBtn.addEventListener('click', ()=>{ state.showMoreDest=true; render(); });
+}
+function openDestDetail(id){
+  state.detailId=id;
+  const wrap=document.getElementById('destDetailPanelWrap'); wrap.style.display='block';
+  document.getElementById('destDetailPanel').innerHTML = detailHTML(byId(id));
+  wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ============================ COMPARE ============================ */
+function toggleCompare(id){
+  if(state.compareSet.has(id)) state.compareSet.delete(id);
+  else { if(state.compareSet.size>=4){ alert("You can compare up to 4 destinations at a time — remove one first."); return; } state.compareSet.add(id); }
+  renderCompareBar(); renderDestGrid();
+  if(state.detailId){ const dp=document.getElementById('destDetailPanel'); if(dp) dp.innerHTML=detailHTML(byId(state.detailId)); renderDetailPanel(); }
+  renderCompareView();
+}
+function renderCompareBar(){
+  const bar=document.getElementById('compareBar'); const n=state.compareSet.size;
+  document.getElementById('compareBarText').textContent = n + (n===1?" destination selected":" destinations selected");
+  bar.classList.toggle('show', n>0);
+}
+document.getElementById('compareClearBtn').addEventListener('click', ()=>{ state.compareSet.clear(); renderCompareBar(); renderDestGrid(); renderCompareView(); });
+document.getElementById('compareGoBtn').addEventListener('click', ()=> setTab('compare'));
+function renderCompareView(){
+  const el=document.getElementById('compareContent');
+  if(state.compareSet.size===0){ el.innerHTML=`<div class="compare-empty"><div class="big">⚖️</div>Nothing selected yet. Head to Explore or Destinations and tick a few boxes.</div>`; return; }
+  const list = Array.from(state.compareSet).map(byId);
+  el.innerHTML = `<div class="compare-grid">${list.map(d=>`
+    <div class="cboard">
+      <button class="remove" onclick="toggleCompare('${d.id}')">✕</button>
+      <div class="vibe-tag">${d.vibeTag}</div>
+      <h3>${d.name}</h3>
+      <div class="metarow"><div class="meta-chip">🚗 ${d.driveLabel}</div><div class="meta-chip">💰 $${d.costLow}–${d.costHigh}</div></div>
+      <div class="scorewrap">${scoreBarsHTML(d.scores)}</div>
+      <ul class="high">${d.activities.slice(0,2).map(a=>`<li>${a}</li>`).join("")}</ul>
+      <div class="best"><strong>Best for:</strong> ${d.bestFor}</div>
+    </div>`).join("")}</div>`;
+}
+
+/* ============================ ACTIVITIES ============================ */
+function activitySeasonOk(a){
+  if(!a.monthsActive) return true;
+  const tripMonth = state.tripStart.getMonth()+1;
+  return a.monthsActive.includes(tripMonth) || a.monthsActive.includes(((tripMonth+10)%12)+1) || a.monthsActive.includes((tripMonth%12)+1);
+}
+function renderActivities(){
+  const catFiltersEl=document.getElementById('actCatFilters');
+  const cats=["all", ...Array.from(new Set(ACTIVITIES.map(a=>a.category)))];
+  catFiltersEl.innerHTML = cats.map(c=>`<button class="chip-toggle ${state.actCatFilter===c?'on':''}" data-cat="${c}">${c==="all"?"All categories":c}</button>`).join("");
+  catFiltersEl.querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=>{ state.actCatFilter=b.dataset.cat; renderActivities(); }));
+
+  const visibleDestIds = new Set(visibleDestinations().map(d=>d.id));
+  const grid=document.getElementById('actGrid');
+  let list = ACTIVITIES.map((a,i)=>({a,i})).filter(({a})=> a.dest.some(id=>visibleDestIds.has(id)) && activitySeasonOk(a));
+  if(state.actCatFilter!=="all") list = list.filter(({a})=>a.category===state.actCatFilter);
+  grid.innerHTML = list.map(({a,i})=>`
+    <div class="act-card" data-act="${i}">
+      ${a.monthsActive?`<span class="seasonal-badge">🌸 In season now</span><br>`:``}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <span class="cat">${a.category}</span><span class="cost-badge cost-${a.cost}">${a.cost}</span>
+      </div>
+      <h4>${a.name}</h4><p>${a.desc}</p>
+      <div class="tags">${a.dest.filter(id=>visibleDestIds.has(id)).map(id=>`<span>${byId(id).name}</span>`).join("")}</div>
+    </div>`).join("") || `<p style="color:var(--muted);padding:30px;text-align:center;">Nothing matches right now — try widening your filters or changing your trip dates (some of these are seasonal).</p>`;
+  grid.querySelectorAll('[data-act]').forEach(card=> card.addEventListener('click', ()=> openActivityModal(parseInt(card.dataset.act))));
+}
+function openActivityModal(i){
+  const a = ACTIVITIES[i];
+  const places = a.dest.map(byId).filter(Boolean);
+  const html = `
+    <div class="tag2">${a.category}${a.monthsActive?' · seasonal':''}</div>
+    <h2 class="display">${a.name}</h2>
+    <p style="font-size:13.5px;color:var(--ink);line-height:1.55;">${a.desc}</p>
+    ${a.accomTag?`<div class="why">Pairs well with a <strong>${a.accomTag}</strong> stay nearby.</div>`:``}
+    <div class="dp-section"><h4>Where to do it</h4>
+      ${places.map(p=>{
+        const others = ACTIVITIES.filter(x=>x!==a && x.dest.includes(p.id)).slice(0,4).map(x=>x.name);
+        return `<div class="modal-dest-card">
+          <h4>${p.name} <span style="font-size:11px;color:var(--muted);font-weight:600;">· ${p.driveLabel}</span></h4>
+          <div class="meta-row" style="margin-bottom:6px;"><div class="meta-chip">💰 $${p.costLow}–${p.costHigh}</div><span class="weather-chip">${getWeather(p).cond}</span></div>
+          <div class="other">Also here: ${others.join(", ")||"—"}</div>
+          <div class="book-row">
+            <a class="book-link" href="${airbnbLink(p.name)}" target="_blank" rel="noopener">🏡 Airbnb</a>
+            <a class="book-link" href="${bookingLink(p.name)}" target="_blank" rel="noopener">🛏️ Hotels</a>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+    ${a.monthsActive?`<div class="book-row"><a class="book-link" href="${googleLink(a.name+' dates '+new Date().getFullYear())}" target="_blank" rel="noopener">🔎 Check this year's dates</a></div>`:``}
+    <div class="surprise-actions"><button class="btn primary" onclick="closeModal(); setTab('destinations'); openDestDetail('${places[0]?.id||''}')">View first location →</button></div>
+  `;
+  openModal(html);
+}
+
+/* ============================ ITINERARY ============================ */
+const DINNER_VIBE={mountain:"a candlelit dinner somewhere with a fireplace",coastal:"fresh seafood at a table close enough to hear the water",wine:"a long dinner with one more glass than planned",cozy:"something slow and unfussy at the local pub or café",luxury:"a proper sit-down dinner at your hotel or a heritage dining room"};
+const MORNING_VIBE={mountain:"coffee with the valley still in cloud",coastal:"a walk on the sand before it gets busy",wine:"coffee and pastries before the cellar doors open",cozy:"a slow breakfast with the paddocks outside the window",luxury:"breakfast in bed, or close to it"};
+function dinnerVibe(d){ return DINNER_VIBE[d.vibeCategory] + currentMode().dinnerSuffix; }
+function morningVibe(d){ return MORNING_VIBE[d.vibeCategory] + currentMode().morningSuffix; }
+function daysBetweenInclusive(s,e){ return Math.max(2, Math.min(4, Math.round((e-s)/86400000)+1)); }
+function arrivalBlock(d,weekday,dateLabel){ return `<div class="day-block"><div><div class="day-label">${weekday}</div><div class="day-sub">${dateLabel} · Arrival</div></div><div>
+    <div class="timeslot"><span class="tlabel">Afternoon</span><p>Leave for ${d.name} (${d.driveLabel} drive) and settle into your ${d.accommodation[0].toLowerCase()}.</p></div>
+    <div class="timeslot"><span class="tlabel">Evening</span><p>${dinnerVibe(d)}. First night, no plans past dinner.</p></div></div></div>`; }
+function fullDayBlock(d,weekday,dateLabel,idx){ const act=d.activities[idx%d.activities.length], act2=d.activities[(idx+1)%d.activities.length], see=d.mustSee[idx%d.mustSee.length];
+  return `<div class="day-block"><div><div class="day-label">${weekday}</div><div class="day-sub">${dateLabel}</div></div><div>
+    <div class="timeslot"><span class="tlabel">Morning</span><p>${morningVibe(d)}, then ${act.toLowerCase()}.</p></div>
+    <div class="timeslot"><span class="tlabel">Afternoon</span><p>${act2}. Swing by ${see} while you're out.</p></div>
+    <div class="timeslot"><span class="tlabel">Evening</span><p>${dinnerVibe(d)}.</p></div></div></div>`; }
+function departureBlock(d,weekday,dateLabel){ return `<div class="day-block"><div><div class="day-label">${weekday}</div><div class="day-sub">${dateLabel} · Departure</div></div><div>
+    <div class="timeslot"><span class="tlabel">Morning</span><p>Sleep in, then a last coffee and a stop at ${d.mustSee[1]||d.mustSee[0]} before you check out.</p></div>
+    <div class="timeslot"><span class="tlabel">Midday</span><p>Head back to Sydney with one stop for lunch on the way.</p></div></div></div>`; }
+function generateItinerary(d){
+  const totalDays = daysBetweenInclusive(state.tripStart, state.tripEnd);
+  let html=""; for(let i=0;i<totalDays;i++){
+    const date=new Date(state.tripStart); date.setDate(date.getDate()+i);
+    const weekday=date.toLocaleDateString('en-AU',{weekday:'long'}), dateLabel=date.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    if(i===0) html+=arrivalBlock(d,weekday,dateLabel);
+    else if(i===totalDays-1) html+=departureBlock(d,weekday,dateLabel);
+    else html+=fullDayBlock(d,weekday,dateLabel,i-1);
+  } return html;
+}
+function renderItineraryTab(){
+  const picker=document.getElementById('itinPicker');
+  picker.innerHTML = poolDestinations().map(d=>`<button class="dest-pick-btn ${state.itinDest===d.id?'on':''}" data-id="${d.id}">${d.name}</button>`).join("");
+  picker.querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=> pickItinDest(b.dataset.id)));
+  const content=document.getElementById('itinContent');
+  if(!state.itinDest){ content.innerHTML=`<p style="color:var(--muted);text-align:center;padding:20px;">Pick a destination above to see the full plan.</p>`; return; }
+  const d=byId(state.itinDest);
+  const size=state.group.size;
+  const accomSuggestion = size<=2 ? d.accommodation[0] : size<=5 ? (d.accommodation.find(a=>a==='Villa'||a==='Cottage'||a==='Farm stay')||d.accommodation[0]) : (d.accommodation.find(a=>a==='Villa'||a==='Farm stay')||"a larger villa or farmhouse nearby");
+  content.innerHTML = `<h3 class="display" style="margin-top:0;">${d.name} · ${state.tripStart.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}–${state.tripEnd.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</h3>
+    <div class="itin-note">Planning for <strong>${size}</strong> ${size===1?'person':'people'} — best suited to a <strong>${accomSuggestion}</strong>. ${bookRowHTML(d)}</div>
+    ${generateItinerary(d)}`;
+}
+function pickItinDest(id){ state.itinDest=id; renderItineraryTab(); }
+
+/* ============================ BUDGET ============================ */
+function renderBudgetTab(){
+  const picker=document.getElementById('budgetPicker');
+  picker.innerHTML = poolDestinations().map(d=>`<button class="dest-pick-btn ${state.budgetDest===d.id?'on':''}" data-id="${d.id}">${d.name}</button>`).join("");
+  picker.querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=>{ state.budgetDest=b.dataset.id; initBudgetSliders(); renderBudgetTab(); }));
+  if(!state.budgetDest){ document.getElementById('budgetSliders').innerHTML=`<p style="color:var(--muted);text-align:center;padding:20px;">Pick a destination above to model its budget.</p>`; document.getElementById('budgetOutput').innerHTML=""; return; }
+  const d=byId(state.budgetDest); const size=state.group.size; const midPP=(d.costLow+d.costHigh)/4;
+  if(budgetSliderVals.accommodation===0){
+    budgetSliderVals.accommodation = Math.round(midPP*0.45*size*accomFactor(size));
+    budgetSliderVals.food = Math.round(midPP*0.35*size);
+    budgetSliderVals.activities = Math.round(midPP*0.20*size);
+  }
+  document.getElementById('budgetSliders').innerHTML = `<h3 class="display" style="margin-top:0;">Budget for ${d.name} · ${size} ${size===1?'person':'people'}</h3>
+    ${sliderRow('accommodation','🏡 Accommodation', 100, 2500)}
+    ${sliderRow('food','🍽️ Food & drink', 60, 2000)}
+    ${sliderRow('activities','🌿 Activities', 40, 1500)}`;
+  ['accommodation','food','activities'].forEach(k=>{
+    document.getElementById('range-'+k).addEventListener('input', e=>{ budgetSliderVals[k]=parseInt(e.target.value); document.getElementById('amt-'+k).textContent="$"+budgetSliderVals[k]; renderBudgetOutput(); });
+  });
+  renderBudgetOutput();
+}
+function sliderRow(key,label,min,max){ return `<div class="slider-row"><div class="toplbl"><span>${label}</span><span class="amt" id="amt-${key}">$${budgetSliderVals[key]}</span></div><input type="range" id="range-${key}" min="${min}" max="${max}" step="10" value="${budgetSliderVals[key]}"></div>`; }
+function initBudgetSliders(){ budgetSliderVals.accommodation=0; budgetSliderVals.food=0; budgetSliderVals.activities=0; }
+function renderBudgetOutput(){
+  const total = budgetSliderVals.accommodation+budgetSliderVals.food+budgetSliderVals.activities;
+  const low=Math.round(total*0.88), high=Math.round(total*1.18);
+  const size=state.group.size;
+  const targetMin=state.budgetPP.min*size, targetMax=state.budgetPP.max*size;
+  let targetHtml="";
+  if(total>targetMax) targetHtml = `<div class="budget-target over">This runs $${total-targetMax} over your $${targetMin}–${targetMax} target.</div>`;
+  else if(total<targetMin) targetHtml = `<div class="budget-target under">This sits $${targetMin-total} under your $${targetMin}–${targetMax} target — room to upgrade something.</div>`;
+  else targetHtml = `<div class="budget-target under">Right inside your $${targetMin}–${targetMax} target. 🎉</div>`;
+  const colors={accommodation:"var(--blush-deep)",food:"var(--sky-deep)",activities:"#D9AE58"};
+  document.getElementById('budgetOutput').innerHTML = `
+    <div class="budget-total"><div class="eyebrow">Estimated total, for ${size} ${size===1?'person':'people'}</div>
+      <div class="big-num display">$${total}</div><div class="range">Realistic range: $${low} – $${high}</div>${targetHtml}</div>
+    <div class="budget-bars">${['accommodation','food','activities'].map(k=>`
+      <div class="bb-row"><div class="lbl" style="text-transform:capitalize;">${k}</div>
+      <div class="track"><i style="width:${total?(budgetSliderVals[k]/total*100):0}%; background:${colors[k]};"></i></div>
+      <div class="amt">$${budgetSliderVals[k]}</div></div>`).join("")}</div>`;
+}
+
+/* ============================ SURPRISE ME ============================ */
+document.getElementById('surpriseBtn').addEventListener('click', ()=>{
+  let pool = visibleDestinations(); if(pool.length===0) pool = poolDestinations();
+  const pick = pool[Math.floor(Math.random()*pool.length)];
+  const w = getWeather(pick);
+  const reasons = [
+    `it's ${pick.driveLabel} away — an easy escape without eating your whole trip in traffic`,
+    `it fits ${seasonLabel(state.season).split(' ')[1]}'s ${pick.vibeTag.toLowerCase()} mood perfectly right now (${w.cond}, ${w.temp})`
+  ];
+  if(state.mode==='couple') reasons.push(`it's rated ${romanceTier(pick)} for romance, which matters when it's just the two of you`);
+  else if(state.mode==='girls') reasons.push(`it's rated ${girlsTripTier(pick)} for girls-trip energy — good food, good photos, good vibes`);
+  else if(state.mode==='friends') reasons.push(`it scores ${pick.scores.social}/10 for group energy and suits ${suggestedGroupFit(pick).toLowerCase()}`);
+  else if(state.mode==='family') reasons.push(`it's rated "${familyFit(pick)}" for families, with room for everyone at $${pick.costLow}–${pick.costHigh}`);
+  else reasons.push(`it's ${soloFit(pick).toLowerCase()}, with ${pick.connectivity.toLowerCase()} phone/wifi signal if you need to stay reachable`);
+  const reason = reasons[Math.floor(Math.random()*reasons.length)];
+  openModal(`
+    <div class="tag2">✨ Your surprise pick</div>
+    <h2 class="display">${pick.name}</h2>
+    <div class="vibe-tag">${pick.vibeTag}</div>
+    <p style="font-size:13.5px;color:var(--ink);line-height:1.55;margin-top:10px;">${pick.description}</p>
+    <div class="why">🩷 <strong>Why this fits:</strong> ${reason}.</div>
+    <div class="surprise-actions">
+      <button class="btn ghost" id="surpriseAgain">🔁 Again</button>
+      <button class="btn primary" id="surpriseGo">View this getaway →</button>
+    </div>
+  `);
+  document.getElementById('surpriseAgain').onclick = ()=> document.getElementById('surpriseBtn').click();
+  document.getElementById('surpriseGo').onclick = ()=>{ closeModal(); setTab('destinations'); openDestDetail(pick.id); };
+});
+
+/* ============================ MASTER RENDER ============================ */
+function render(){
+  renderSeasonPill();
+  if(state.activeTab==='explore') renderMap();
+  if(state.activeTab==='destinations') renderDestGrid();
+  if(state.activeTab==='compare') renderCompareView();
+  if(state.activeTab==='activities') renderActivities();
+  if(state.activeTab==='itinerary') renderItineraryTab();
+  if(state.activeTab==='budget') renderBudgetTab();
+}
+renderHeaderPills(); renderTripSetup(); updateBrandSubtitle(); renderTrending(); render(); renderCompareBar();
+</script>
+</body>
+</html>
